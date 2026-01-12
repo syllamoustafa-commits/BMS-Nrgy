@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ENERGISME — Empreinte Carbone</title>
+  <style>
+    :root{
+      --bg0:#070b12;--bg1:#0b1220;
+      --panel:rgba(20,28,45,.66);--panel2:rgba(18,26,44,.82);
+      --stroke:rgba(120,180,255,.22);--stroke2:rgba(120,180,255,.35);
+      --text:#d7f2ff;--muted:#9fb6c7;
+      --cyan:#00d4ff;--cyan2:#2aa6ff;--green:#2ee59d;--orange:#ffb84d;--red:#ff5c7a;
+      --shadow:0 18px 60px rgba(0,0,0,.55);--blur:blur(14px);
+      --r16:16px;--r20:20px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;color:var(--text);
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:
+        radial-gradient(1000px 700px at 30% -10%, rgba(0,212,255,.18), transparent 55%),
+        radial-gradient(900px 700px at 120% 10%, rgba(46,229,157,.10), transparent 60%),
+        radial-gradient(900px 800px at 40% 120%, rgba(42,166,255,.10), transparent 60%),
+        linear-gradient(180deg, var(--bg1), var(--bg0));
+      min-height:100vh;
+    }
+    .wrap{max-width:1180px;margin:0 auto;padding:18px}
+    .panel{
+      background:linear-gradient(180deg, rgba(18,26,44,.72), rgba(10,14,26,.55));
+      border:1px solid var(--stroke);
+      border-radius:var(--r20);
+      backdrop-filter:var(--blur);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    header{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:12px 14px;border-bottom:1px solid rgba(120,180,255,.12);
+      background:rgba(255,255,255,.02);
+      position:sticky;top:0;z-index:5;
+    }
+    .chip{
+      display:inline-flex;align-items:center;gap:8px;padding:7px 10px;border-radius:12px;
+      background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);
+      font-size:12px;white-space:nowrap;
+    }
+    .dot{width:8px;height:8px;border-radius:999px;background:var(--cyan);box-shadow:0 0 12px rgba(0,212,255,.75)}
+    .btn{
+      padding:9px 11px;border-radius:12px;border:1px solid rgba(0,212,255,.22);
+      background:rgba(0,212,255,.08);color:rgba(215,242,255,.95);
+      cursor:pointer;
+    }
+    .btn:hover{background:rgba(0,212,255,.12)}
+    .grid{
+      display:grid;
+      grid-template-columns:1.1fr .9fr;
+      gap:12px;
+      padding:12px;
+    }
+    .card{
+      border-radius:18px;background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.08);
+      padding:12px;
+    }
+    .ttl{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+    .ttl b{font-size:12px;letter-spacing:.2px}
+    .ttl small{color:rgba(159,182,199,.9);font-size:11px}
+    .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .kpi{
+      border-radius:16px;background:rgba(0,0,0,.16);border:1px solid rgba(255,255,255,.08);
+      padding:10px;
+    }
+    .kpi .label{font-size:11px;color:rgba(159,182,199,.9);display:flex;align-items:center;gap:8px}
+    .badge-dot{width:8px;height:8px;border-radius:999px;background:var(--cyan2);box-shadow:0 0 12px rgba(42,166,255,.55)}
+    .kpi .val{margin-top:6px;font-size:20px;font-weight:900}
+    .kpi .delta{font-size:11px;color:rgba(159,182,199,.92);margin-top:2px}
+    table{
+      width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border-radius:16px;
+      border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.14);
+    }
+    th,td{padding:9px 10px;font-size:11px;border-bottom:1px solid rgba(255,255,255,.06)}
+    th{color:rgba(159,182,199,.95);font-weight:800;text-align:left;background:rgba(255,255,255,.03)}
+    td{color:rgba(215,242,255,.92)}
+    tr:last-child td{border-bottom:0}
+    .num{text-align:right;font-variant-numeric:tabular-nums}
+    .muted{color:rgba(159,182,199,.92);font-size:11px;line-height:1.4}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    input,select{
+      width:100%;padding:10px 10px;border-radius:12px;outline:none;
+      border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.18);color:rgba(215,242,255,.92);
+    }
+    label{font-size:11px;color:rgba(159,182,199,.92);display:block;margin:8px 0 6px}
+    @media (max-width:980px){
+      .grid{grid-template-columns:1fr}
+    }
+  .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:rgba(2,6,23,.92);border:1px solid rgba(0,170,255,.35);padding:10px 14px;border-radius:14px;color:#c8eaff;box-shadow:0 0 14px rgba(0,212,255,.22);opacity:0;pointer-events:none;transition:.25s} .toast.show{opacity:1}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <header>
+        <div class="row">
+          <div class="chip"><span class="dot"></span><b>ENERGISME</b></div>
+          <div class="chip" id="chipSite">Site</div>
+          <div class="chip" id="chipYear"></div>
+        </div>
+        <div class="row">
+          <button class="btn" onclick="location.href='index.html'">← Retour Dashboard</button>
+          <button class="btn" id="btnRecalc">Recalculer</button>
+        </div>
+      </header>
+
+      <div class="grid">
+        <div class="card">
+          <div class="ttl">
+            <b>Empreinte carbone — synthèse</b>
+            <small>Calcul à partir des index (N / N-1)</small>
+          </div>
+
+          <div class="kpis">
+            <div class="kpi">
+              <div class="label"><span class="badge-dot"></span>Total N</div>
+              <div class="val" id="kpiTotalN">—</div>
+              <div class="delta" id="kpiTotalNSub">tCO₂e</div>
+            </div>
+            <div class="kpi">
+              <div class="label"><span class="badge-dot" style="background:var(--green);box-shadow:0 0 12px rgba(46,229,157,.55)"></span>Par m²</div>
+              <div class="val" id="kpiPerM2">—</div>
+              <div class="delta">kgCO₂e / m²</div>
+            </div>
+            <div class="kpi">
+              <div class="label"><span class="badge-dot" style="background:var(--orange);box-shadow:0 0 12px rgba(255,184,77,.45)"></span>Évolution vs N-1</div>
+              <div class="val" id="kpiDelta">—</div>
+              <div class="delta" id="kpiDeltaSub">%</div>
+            </div>
+            <div class="kpi">
+              <div class="label"><span class="badge-dot" style="background:var(--red);box-shadow:0 0 12px rgba(255,92,122,.55)"></span>Top poste</div>
+              <div class="val" id="kpiTop">—</div>
+              <div class="delta" id="kpiTopSub">—</div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px" class="muted">
+            💡 Les facteurs d’émissions sont configurables (à droite). Par défaut, si aucun facteur n’existe, le poste est ignoré.
+          </div>
+
+          <div style="margin-top:12px">
+            <div class="ttl"><b>Détail par énergie (N)</b><small>tCO₂e</small></div>
+            <table>
+              <thead>
+                <tr><th>Énergie</th><th class="num">Conso</th><th class="num">Facteur</th><th class="num">kgCO₂e</th><th class="num">tCO₂e</th></tr>
+              </thead>
+              <tbody id="tbodyEnergies"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="ttl"><b>Paramètres</b><small>Identité + facteurs CO₂</small></div>
+
+          <div class="muted">Récupère automatiquement l'identité depuis <code>identite_batiment_connected.html</code>. Tu peux aussi ajuster ici et enregistrer.</div>
+
+          <label>Surface (m²)</label>
+          <input id="inSurface" type="number" step="1" min="0" />
+
+          <label>Année de calcul</label>
+          <select id="selYear"></select>
+
+          <div style="height:10px"></div>
+          <div class="ttl"><b>Facteurs d’émissions</b><small>kgCO₂e / kWh (et Eau en kgCO₂e/m³)</small></div>
+
+          <label>Électricité</label>
+          <input id="fElec" type="number" step="0.001" min="0" placeholder="ex: 0.050" />
+
+          <label>Gaz</label>
+          <input id="fGaz" type="number" step="0.001" min="0" placeholder="ex: 0.204" />
+
+          <label>Chaleur (réseau / vapeur)</label>
+          <input id="fChaud" type="number" step="0.001" min="0" placeholder="ex: 0.150" />
+
+          <label>Froid</label>
+          <input id="fFroid" type="number" step="0.001" min="0" placeholder="ex: 0.060" />
+
+          <label>Eau (m³)</label>
+          <input id="fEau" type="number" step="0.001" min="0" placeholder="ex: 0.300" />
+
+          <div style="height:12px"></div>
+          <button class="btn" id="btnSave">Enregistrer facteurs</button>
+
+          <div style="margin-top:10px" class="muted">
+            ⚠️ Pour que le calcul fonctionne, tes compteurs doivent avoir un <b>type</b> dans le plan de comptage (ex: “Électricité”, “Gaz”, “Chaleur”, “Froid”, “Eau”) et des index renseignés dans l’admin.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="toast" class="toast"></div>
+
+
+<script>
+  const LS = {
+    IDENTITY: "ENERGISME_IDENTITY",
+    PLAN: "energisme_plan_comptage",
+    RELEVES: "energisme_releves",
+    FACTORS: "ENERGISME_CARBON_FACTORS",
+  };
+
+  function lsJson(key, fallback=null){
+    try{ const raw = localStorage.getItem(key); return raw? JSON.parse(raw) : fallback; }
+    catch(e){ return fallback; }
+  }
+  function setLsJson(key, val){
+    try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){}
+  }
+
+  function monthKey(m){ return String(m).padStart(2,"0"); }
+  function getIndex(releves, y, m, id){
+    const yy=String(y), mm=monthKey(m);
+    const val = releves?.[yy]?.[mm]?.[id];
+    return (val===0 || !!val) ? Number(val) : null;
+  }
+
+  // Unit helpers
+  function unitCategory(unit){
+    const u=(unit||"").toString().trim().toLowerCase().replace(/\s/g,"");
+    if(u==="l" || u==="litre" || u==="litres") return "l";
+    if(u==="m3" || u==="m³") return "m3";
+    if(/wh/.test(u)) return "wh";
+    return "raw";
+  }
+  function toKwh(value, unit){
+    const v = Number(value);
+    if(!Number.isFinite(v)) return 0;
+    const u = (unit||"kWh").toString().toLowerCase().replace(/\s/g,"");
+    if(u==="wh") return v/1000;
+    if(u==="kwh") return v;
+    if(u==="mwh") return v*1000;
+    if(u==="gwh") return v*1000*1000;
+    return v;
+  }
+  function toBase(value, unit){
+    const v = Number(value);
+    if(!Number.isFinite(v)) return 0;
+    const cat = unitCategory(unit);
+    if(cat==="wh") return toKwh(v, unit);
+    if(cat==="l") return v/1000; // litres -> m3
+    if(cat==="m3") return v;      // m3
+    return v;
+  }
+
+  function computeMeterYear(releves, meterId, year, unit){
+    const out=[];
+    for(let m=1;m<=12;m++){
+      const cur=getIndex(releves, year, m, meterId);
+      const prev=(m===1)?getIndex(releves, year-1, 12, meterId):getIndex(releves, year, m-1, meterId);
+      if(cur==null || prev==null){ out.push(0); continue; }
+      out.push(Math.max(0, toBase(cur-prev, unit)));
+    }
+    return out;
+  }
+
+  function safeName(s){ return (s ?? "").toString().trim() || "—"; }
+  function fmt(n){ return (Number(n)||0).toLocaleString("fr-FR",{maximumFractionDigits:1}); }
+
+  function normalizeType(type){
+    const t = (type||"").toString().trim().toLowerCase();
+    if(!t) return "Électricité";
+    if(t.includes("eau")) return "Eau";
+    if(t.includes("gaz")) return "Gaz";
+    if(t.includes("chaud") || t.includes("chaleur")) return "Chaud";
+    if(t.includes("froid")) return "Froid";
+    if(t.includes("elec") || t.includes("élec") || t.includes("electric")) return "Électricité";
+    return safeName(type);
+  }
+
+  function initYearOptions(){
+    const sel = document.getElementById("selYear");
+    const now = new Date().getFullYear();
+    const plan = lsJson(LS.PLAN, null);
+    const releves = lsJson(LS.RELEVES, null);
+    const years = new Set([now, now-1, now-2]);
+    if(releves) Object.keys(releves).forEach(y=> years.add(Number(y)));
+    if(plan?.years) Object.keys(plan.years).forEach(y=> years.add(Number(y)));
+    const arr = [...years].filter(Number.isFinite).sort((a,b)=>b-a);
+    sel.innerHTML = arr.map(y=>`<option value="${y}">${y}</option>`).join("");
+    sel.value = String(now);
+  }
+
+  function prefillFromIdentity(){
+    const id = lsJson(LS.IDENTITY, null);
+    const identite = id?.identite || {};
+    const energies = id?.energies || {};
+
+    const surface = Number(identite.surface || identite.surface_m2 || 0) || 0;
+    const surfaceInput = document.getElementById("inSurface");
+    if(surface && !surfaceInput.value) surfaceInput.value = String(surface);
+
+    const pills = [];
+    if(energies.elec==="Oui") pills.push("⚡ Électricité");
+    if(energies.water==="Oui") pills.push("💧 Eau");
+    if(energies.gas==="Oui") pills.push("🔥 Gaz");
+    if(energies.heat==="Oui") pills.push("♨️ Chaleur");
+    if(energies.cold==="Oui") pills.push("❄️ Froid");
+    if(energies.pv==="Oui") pills.push("☀️ PV");
+    document.getElementById("bHint").textContent =
+      `${safeName(identite.name || identite.nom || "Bâtiment")} • ${safeName(identite.city || identite.ville || "—")} • ${pills.length? pills.join(" · "): "Énergies : —"}`;
+  }
+
+  function loadFactors(){
+    const f = lsJson(LS.FACTORS, null);
+    if(!f) return;
+    if(f.elec!=null) document.getElementById("fElec").value = f.elec;
+    if(f.gaz!=null) document.getElementById("fGaz").value = f.gaz;
+    if(f.chaud!=null) document.getElementById("fChaud").value = f.chaud;
+    if(f.froid!=null) document.getElementById("fFroid").value = f.froid;
+    if(f.eau!=null) document.getElementById("fEau").value = f.eau;
+  }
+
+  function saveFactors(){
+    const f = {
+      elec: Number(document.getElementById("fElec").value||0),
+      gaz: Number(document.getElementById("fGaz").value||0),
+      chaud: Number(document.getElementById("fChaud").value||0),
+      froid: Number(document.getElementById("fFroid").value||0),
+      eau: Number(document.getElementById("fEau").value||0),
+    };
+    setLsJson(LS.FACTORS, f);
+    flash("✅ Facteurs enregistrés");
+  }
+
+  function factorFor(type){
+    const t = normalizeType(type);
+    const f = {
+      "Électricité": Number(document.getElementById("fElec").value||0),
+      "Gaz": Number(document.getElementById("fGaz").value||0),
+      "Chaud": Number(document.getElementById("fChaud").value||0),
+      "Froid": Number(document.getElementById("fFroid").value||0),
+      "Eau": Number(document.getElementById("fEau").value||0),
+    };
+    const unit = (t==="Eau") ? "kgCO₂e/m³" : "kgCO₂e/kWh";
+    return { factor: (f[t] ?? f["Électricité"] ?? 0), unit };
+  }
+
+  function aggregate(plan, releves, year){
+    const nodes = Array.isArray(plan?.nodes) ? plan.nodes : [];
+    const byType = {};
+    for(const n of nodes){
+      const id = n.id || n.uid || n.code;
+      if(!id) continue;
+      const unit = n.unite || n.unit || "kWh";
+      const type = normalizeType(n.type || n.energy || n.energie || "Électricité");
+      const arr = computeMeterYear(releves, id, year, unit);
+      const q = arr.reduce((a,b)=>a+b,0);
+      if(q<=0) continue;
+
+      const u = (type==="Eau") ? "m³" : "kWh";
+      if(!byType[type]) byType[type] = { q:0, u };
+      byType[type].q += q;
+    }
+    return byType;
+  }
+
+  function calc(){
+    const plan = lsJson(LS.PLAN, null);
+    const releves = lsJson(LS.RELEVES, null);
+    const year = Number(document.getElementById("selYear").value) || new Date().getFullYear();
+    const surface = Number(document.getElementById("inSurface").value||0) || 0;
+
+    const byType = aggregate(plan, releves, year);
+    const rows = Object.entries(byType).map(([type, obj])=>{
+      const q = Number(obj.q||0);
+      const u = obj.u || (type==="Eau" ? "m³" : "kWh");
+      const fo = factorFor(type);
+      const kg = q * (Number(fo.factor)||0);
+      return { type, q, u, f: fo.factor, fu: fo.unit, kg, t: kg/1000 };
+    }).sort((a,b)=> b.kg - a.kg);
+
+    // table
+    const tbody = document.getElementById("tbodyEnergies");
+    tbody.innerHTML = rows.length ? rows.map(r=>`
+      <tr>
+        <td>${r.type}</td>
+        <td class="num">${fmt(r.q)} <span class="u">${r.u}</span></td>
+        <td class="num">${r.f.toFixed(3)} <span class="u">${r.fu}</span></td>
+        <td class="num">${fmt(r.kg)} <span class="u">kgCO₂e</span></td>
+        <td class="num">${r.t.toFixed(2)} <span class="u">tCO₂e</span></td>
+      </tr>`).join("")
+      : `<tr><td colspan="5" class="muted">Aucune donnée calculable (plan/relevés manquants ou année vide).</td></tr>`;
+
+    const totalKg = rows.reduce((a,x)=>a+x.kg,0);
+    const totalT = totalKg/1000;
+    const perM2 = surface ? totalKg/surface : 0;
+
+    document.getElementById("kpiTotalT").textContent = totalT.toFixed(2);
+    document.getElementById("kpiTotalN").textContent = fmt(totalKg);
+    document.getElementById("kpiKgM2").textContent = surface ? perM2.toFixed(1) : "—";
+  }
+
+  function flash(msg){
+    const el = document.getElementById("toast");
+    if(!el) return alert(msg);
+    el.textContent = msg;
+    el.classList.add("show");
+    setTimeout(()=> el.classList.remove("show"), 2000);
+  }
+
+  // Boot
+  initYearOptions();
+  prefillFromIdentity();
+  loadFactors();
+  calc();
+
+  document.getElementById("btnSave").addEventListener("click", saveFactors);
+  document.getElementById("selYear").addEventListener("change", calc);
+  document.getElementById("inSurface").addEventListener("input", ()=>{ clearTimeout(window.__t); window.__t=setTimeout(calc,150); });
+  ["fElec","fGaz","fChaud","fFroid","fEau"].forEach(id=>{
+    document.getElementById(id).addEventListener("input", ()=>{ clearTimeout(window.__f); window.__f=setTimeout(calc,150); });
+  });
+</script>
+
+</html>

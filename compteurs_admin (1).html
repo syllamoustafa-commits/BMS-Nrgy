@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>ENERGISME – Analyse Énergétique</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #020617;
+        color: #c8eaff;
+      }
+      header {
+        padding: 14px;
+        border-bottom: 1px solid #00d4ff55;
+      }
+      h1 {
+        margin: 0;
+        color: #00d4ff;
+      }
+      h3 {
+        margin-top: 16px;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 12px;
+        padding: 12px;
+      }
+      .panel {
+        border: 1px solid #00d4ff44;
+        border-radius: 14px;
+        padding: 12px;
+        background: rgba(0, 120, 255, 0.08);
+      }
+
+      select,
+      input {
+        width: 100%;
+        padding: 8px;
+        margin-top: 6px;
+        background: #000;
+        color: #c8eaff;
+        border: 1px solid #00d4ff55;
+        border-radius: 8px;
+      }
+
+      .month {
+        padding: 8px;
+        margin: 4px 0;
+        border: 1px solid #00d4ff33;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      .month.active {
+        background: #00d4ff44;
+      }
+
+      .energy button {
+        margin: 4px;
+        padding: 6px 12px;
+        border-radius: 20px;
+        border: 1px solid #00d4ff;
+        background: #001a2e;
+        color: #c8eaff;
+        cursor: pointer;
+      }
+      .energy button.active {
+        background: #00d4ff55;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+      th,
+      td {
+        border-bottom: 1px solid #00d4ff33;
+        padding: 8px;
+        font-size: 13px;
+      }
+
+      .log {
+        font-size: 11px;
+        background: #000;
+        padding: 8px;
+        border-radius: 8px;
+        margin-top: 8px;
+        max-height: 140px;
+        overflow: auto;
+      }
+
+      canvas {
+        background: #000;
+        border-radius: 8px;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <h1>ENERGISME – Analyse énergétique & consommations</h1>
+    </header>
+
+    <div class="layout">
+      <!-- GAUCHE -->
+      <div class="panel">
+        <h3>Année</h3>
+        <select id="yearSelect"></select>
+
+        <h3>Mois</h3>
+        <div id="months"></div>
+
+        <hr />
+
+        <h3>📥 Import Excel / CSV</h3>
+        <input type="file" id="fileIndex" accept=".xlsx,.csv" />
+        <div class="log" id="log"></div>
+      </div>
+
+      <!-- DROITE -->
+      <div class="panel">
+        <div class="energy" id="energyTabs"></div>
+        <h3 id="title">—</h3>
+
+        <!-- TABLE INDEX -->
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nom</th>
+              <th>Index</th>
+            </tr>
+          </thead>
+          <tbody id="table"></tbody>
+        </table>
+
+        <hr />
+
+        <!-- ANALYSE -->
+        <h3>📊 Consommations mensuelles</h3>
+        <canvas id="chart" width="800" height="200"></canvas>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Mois</th>
+              <th>Consommation</th>
+              <th>Analyse</th>
+            </tr>
+          </thead>
+          <tbody id="analysisTable"></tbody>
+        </table>
+
+        <div
+          id="analysisSummary"
+          style="margin-top: 10px; font-size: 13px"
+        ></div>
+      </div>
+    </div>
+
+    <script>
+      /* =========================
+   OUTILS
+========================= */
+      const logBox = document.getElementById("log");
+      const log = (m) => (logBox.innerHTML += m + "<br>");
+
+      function parseIndex(v) {
+        if (v == null) return null;
+        const t = String(v).replace(/\s/g, "").replace(",", ".");
+        const n = Number(t);
+        return Number.isFinite(n) ? n : null;
+      }
+
+      function extractYearMonth(v) {
+        if (!v) return null;
+        if (v instanceof Date && !isNaN(v)) {
+          return {
+            year: v.getFullYear(),
+            month: String(v.getMonth() + 1).padStart(2, "0"),
+          };
+        }
+        const s = String(v).trim();
+        let m = s.match(/^(\d{4})-(\d{2})/);
+        if (m) return { year: +m[1], month: m[2] };
+        m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (m) return { year: +m[3], month: m[2] };
+        return null;
+      }
+
+      /* =========================
+   DONNÉES
+========================= */
+      const plan = JSON.parse(
+        localStorage.getItem("energisme_plan_comptage") || "{}"
+      );
+      if (!plan.nodes) alert("❌ Plan de comptage Energisme manquant");
+
+      let data = JSON.parse(localStorage.getItem("energisme_releves") || "{}");
+
+      let year = new Date().getFullYear();
+      let month = String(new Date().getMonth() + 1).padStart(2, "0");
+      let energy = "elec";
+
+      /* =========================
+   CALCUL AUTOMATIQUE (=)
+========================= */
+      function computeCalculatedIndexes(year, month) {
+        const result = {};
+        const raw = data?.[year]?.[month] || {};
+
+        plan.nodes.forEach((n) => {
+          if (raw[n.id] != null) result[n.id] = raw[n.id];
+        });
+
+        let changed = true;
+        let safety = 0;
+
+        while (changed && safety < 15) {
+          changed = false;
+          safety++;
+
+          plan.nodes.forEach((parent) => {
+            const children = plan.nodes.filter((n) => n.parent === parent.id);
+            if (!children.length) return;
+
+            let sum = 0;
+            let valid = false;
+
+            children.forEach((c) => {
+              const v = result[c.id];
+              if (typeof v === "number") {
+                sum += v;
+                valid = true;
+              }
+            });
+
+            if (valid && result[parent.id] !== sum) {
+              result[parent.id] = sum;
+              changed = true;
+            }
+          });
+        }
+        return result;
+      }
+      function buildFormulaText(parentId) {
+        const children = plan.nodes.filter((n) => n.parent === parentId);
+        if (!children.length) return "";
+
+        return "= " + children.map((c) => c.id).join(" + ");
+      }
+
+      /* =========================
+   UI – ANNÉES / MOIS
+========================= */
+      const months = [
+        "01",
+        "02",
+        "03",
+        "04",
+        "05",
+        "06",
+        "07",
+        "08",
+        "09",
+        "10",
+        "11",
+        "12",
+      ];
+      const names = [
+        "Janvier",
+        "Février",
+        "Mars",
+        "Avril",
+        "Mai",
+        "Juin",
+        "Juillet",
+        "Août",
+        "Septembre",
+        "Octobre",
+        "Novembre",
+        "Décembre",
+      ];
+
+      const yearSelect = document.getElementById("yearSelect");
+      function refreshYears() {
+        const set = new Set([year]);
+        Object.keys(data).forEach((y) => set.add(+y));
+        yearSelect.innerHTML = "";
+        [...set].sort().forEach((y) => {
+          const o = document.createElement("option");
+          o.value = y;
+          o.textContent = y;
+          if (y === year) o.selected = true;
+          yearSelect.appendChild(o);
+        });
+      }
+      yearSelect.onchange = () => {
+        year = +yearSelect.value;
+        renderAll();
+      };
+
+      const monthsDiv = document.getElementById("months");
+      months.forEach((m, i) => {
+        const d = document.createElement("div");
+        d.className = "month" + (m === month ? " active" : "");
+        d.textContent = names[i];
+        d.onclick = () => {
+          document
+            .querySelectorAll(".month")
+            .forEach((x) => x.classList.remove("active"));
+          d.classList.add("active");
+          month = m;
+          renderAll();
+        };
+        monthsDiv.appendChild(d);
+      });
+
+      /* =========================
+   ÉNERGIES
+========================= */
+      const energies = [
+        ["elec", "⚡ Élec"],
+        ["eau", "💧 Eau"],
+        ["gaz", "🔥 Gaz"],
+        ["chaud", "♨️ Chaud"],
+        ["froid", "❄️ Froid"],
+      ];
+      const tabs = document.getElementById("energyTabs");
+      energies.forEach((e) => {
+        const b = document.createElement("button");
+        b.textContent = e[1];
+        if (e[0] === energy) b.classList.add("active");
+        b.onclick = () => {
+          document
+            .querySelectorAll(".energy button")
+            .forEach((x) => x.classList.remove("active"));
+          b.classList.add("active");
+          energy = e[0];
+          renderAll();
+        };
+        tabs.appendChild(b);
+      });
+
+      /* =========================
+   TABLE INDEX
+========================= */
+      function buildFormulaText(parentId) {
+        const children = plan.nodes.filter((n) => n.parent === parentId);
+        if (!children.length) return "";
+        return "= " + children.map((c) => c.id).join(" + ");
+      }
+
+      function renderTable() {
+        if (!data[year]) data[year] = {};
+        if (!data[year][month]) data[year][month] = {};
+
+        const calculated = computeCalculatedIndexes(year, month);
+
+        document.getElementById("title").textContent = `${
+          names[month - 1]
+        } ${year}`;
+
+        const tbody = document.getElementById("table");
+        tbody.innerHTML = "";
+
+        plan.nodes
+          .filter((n) => n.type === energy)
+          .forEach((n) => {
+            const hasChildren = plan.nodes.some((x) => x.parent === n.id);
+            const value = calculated[n.id];
+            const formula = hasChildren ? buildFormulaText(n.id) : "";
+
+            const tr = document.createElement("tr");
+
+            tr.innerHTML = `
+        <td>${n.id}</td>
+        <td>
+          ${n.nom}
+          ${
+            hasChildren
+              ? `<div style="font-size:11px;color:#9ca3af;margin-top:4px">
+                   ${formula}
+                 </div>`
+              : ""
+          }
+        </td>
+        <td>
+          ${
+            hasChildren
+              ? `<b>${value ?? "—"}</b>`
+              : `<input type="number" value="${value ?? ""}">`
+          }
+        </td>
+      `;
+
+            if (!hasChildren) {
+              tr.querySelector("input").onchange = (e) => {
+                data[year][month][n.id] = parseIndex(e.target.value);
+                localStorage.setItem("energisme_releves", JSON.stringify(data));
+                renderAll();
+              };
+            }
+
+            tbody.appendChild(tr);
+          });
+      }
+
+      /* =========================
+   ANALYSE
+========================= */
+      function analyseConso(c) {
+        if (c == null) return "—";
+        if (c < 0) return "🔵 Baisse";
+        if (c < 50) return "🟢 Stable";
+        if (c < 200) return "🟠 Hausse";
+        return "🔴 Dérive";
+      }
+
+      function renderAnalysis() {
+        const tbody = document.getElementById("analysisTable");
+        const summary = document.getElementById("analysisSummary");
+        tbody.innerHTML = "";
+        summary.innerHTML = "";
+
+        const calc = computeCalculatedIndexes(year, month);
+        let total = 0;
+
+        plan.nodes
+          .filter((n) => n.type === energy && !n.parent)
+          .forEach((n) => {
+            if (typeof calc[n.id] === "number") total += calc[n.id];
+          });
+
+        months.forEach((m, i) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+      <td>${names[i]}</td>
+      <td>${total || "—"}</td>
+      <td>${analyseConso(total)}</td>
+    `;
+          tbody.appendChild(tr);
+        });
+
+        summary.innerHTML = `Total calculé : <b>${total}</b>`;
+      }
+
+      /* =========================
+   IMPORT EXCEL / CSV
+========================= */
+      document
+        .getElementById("fileIndex")
+        .addEventListener("change", async (e) => {
+          logBox.innerHTML = "";
+          const file = e.target.files[0];
+          if (!file) return;
+
+          const wb = XLSX.read(await file.arrayBuffer(), { cellDates: true });
+          const sheet = wb.Sheets[wb.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+          let count = 0;
+          rows.forEach((r) => {
+            const id = String(r.ID || r.id || "").trim();
+            const index = parseIndex(r.Index || r.index);
+            const ym = extractYearMonth(r.Date || r.date || r.Mois || r.mois);
+            if (!id || index == null || !ym) return;
+            if (!data[ym.year]) data[ym.year] = {};
+            if (!data[ym.year][ym.month]) data[ym.year][ym.month] = {};
+            data[ym.year][ym.month][id] = index;
+            log(`✔ ${id} → ${index} (${ym.month}/${ym.year})`);
+            count++;
+          });
+
+          localStorage.setItem("energisme_releves", JSON.stringify(data));
+          refreshYears();
+          renderAll();
+          alert(`✅ ${count} index importés`);
+          e.target.value = "";
+        });
+
+      /* =========================
+   INIT
+========================= */
+      function renderAll() {
+        renderTable();
+        renderAnalysis();
+      }
+      refreshYears();
+      renderAll();
+    </script>
+  </body>
+</html>

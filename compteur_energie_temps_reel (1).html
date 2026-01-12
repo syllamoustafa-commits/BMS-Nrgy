@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ENERGISME — Compteurs énergie en temps réel</title>
+
+  <!-- XLSX (import Excel .xlsx) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    :root{
+      --bg0:#070b12; --bg1:#0b1220;
+      --panel: rgba(20, 28, 45, 0.66);
+      --panel2: rgba(18, 26, 44, 0.82);
+      --stroke: rgba(120, 180, 255, 0.22);
+      --stroke2: rgba(120, 180, 255, 0.35);
+      --text: #d7f2ff;
+      --muted: #9fb6c7;
+
+      --cyan:#00d4ff; --cyan2:#2aa6ff;
+      --green:#2ee59d; --orange:#ffb84d; --red:#ff5c7a;
+
+      --shadow: 0 18px 60px rgba(0,0,0,.55);
+      --blur: blur(14px);
+      --r20:20px;
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      color:var(--text);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(1000px 700px at 30% -10%, rgba(0, 212, 255, 0.18), transparent 55%),
+        radial-gradient(900px 700px at 120% 10%, rgba(46, 229, 157, 0.10), transparent 60%),
+        radial-gradient(900px 800px at 40% 120%, rgba(42, 166, 255, 0.10), transparent 60%),
+        linear-gradient(180deg, var(--bg1), var(--bg0));
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    .app{
+      height:100vh;
+      display:grid;
+      grid-template-columns: 330px 1fr;
+      gap:14px;
+      padding:18px;
+    }
+
+    .panel{
+      background: linear-gradient(180deg, rgba(18, 26, 44, 0.72), rgba(10, 14, 26, 0.55));
+      border: 1px solid var(--stroke);
+      border-radius: var(--r20);
+      backdrop-filter: var(--blur);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+      min-width: 0;
+    }
+
+    .left{
+      display:flex;
+      flex-direction:column;
+      min-width:0;
+    }
+    .hdr{
+      padding:12px 12px 10px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      border-bottom: 1px solid rgba(120, 180, 255, 0.12);
+      background: rgba(255,255,255,.02);
+    }
+    .hdr strong{ font-size:13px; }
+    .btn-icon{
+      width:34px;height:34px;border-radius:12px;
+      display:grid;place-items:center;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.06);
+      color: rgba(215,242,255,.9);
+      cursor:pointer;
+      transition:.15s ease;
+    }
+    .btn-icon:hover{
+      transform: translateY(-1px);
+      border-color: rgba(0,212,255,.25);
+      box-shadow: 0 0 0 4px rgba(0,212,255,.06);
+    }
+
+    .left .body{
+      padding:12px;
+      overflow:auto;
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .card{
+      border-radius:18px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.08);
+      padding:12px;
+    }
+    .card h3{
+      margin:0 0 8px 0;
+      font-size:12px;
+      color: rgba(215,242,255,.92);
+      letter-spacing:.2px;
+    }
+    .sub{
+      font-size:11px;
+      color: rgba(159,182,199,.9);
+      line-height:1.35;
+    }
+
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:7px 10px;
+      border-radius:12px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.06);
+      color:var(--text);
+      font-size:12px;
+      white-space:nowrap;
+    }
+    .dot{
+      width:8px;height:8px;border-radius:999px;
+      background: var(--cyan);
+      box-shadow: 0 0 12px rgba(0,212,255,.75);
+    }
+
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .row > *{ flex: 1 1 auto; }
+
+    input, select, button{ font-family: inherit; }
+
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      margin-top:10px;
+    }
+    .field label{
+      font-size:11px;
+      color: rgba(159,182,199,.92);
+      font-weight:700;
+      letter-spacing:.25px;
+    }
+    .inp, select{
+      width:100%;
+      padding:10px 12px;
+      border-radius:14px;
+      outline:none;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      color: rgba(215,242,255,.92);
+    }
+
+    .btn{
+      padding:10px 12px;
+      border-radius:14px;
+      border: 1px solid rgba(0,212,255,.22);
+      background: rgba(0,212,255,.08);
+      color: rgba(215,242,255,.95);
+      cursor:pointer;
+      transition:.15s ease;
+      font-size:12px;
+      font-weight:700;
+    }
+    .btn:hover{ background: rgba(0,212,255,.12); }
+    .btn:active{ transform: translateY(1px); }
+
+    .btn-danger{
+      border-color: rgba(255,92,122,.28);
+      background: rgba(255,92,122,.08);
+    }
+    .btn-danger:hover{ background: rgba(255,92,122,.12); }
+
+    .btn-ghost{
+      border-color: rgba(255,255,255,.10);
+      background: rgba(255,255,255,.03);
+    }
+    .btn-ghost:hover{ background: rgba(255,255,255,.06); }
+
+    .note{
+      border-radius:14px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.14);
+      padding:10px;
+      font-size:11px;
+      color: rgba(159,182,199,.92);
+      line-height:1.45;
+    }
+
+    .main{ position:relative; min-width:0; overflow:hidden; }
+
+    .topbar{
+      position:absolute; top:12px; left:12px; right:12px;
+      height:52px;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:10px 12px;
+      border-radius:14px;
+      background: linear-gradient(180deg, rgba(18, 26, 44, 0.78), rgba(10, 14, 26, 0.65));
+      border: 1px solid var(--stroke);
+      backdrop-filter: var(--blur);
+      box-shadow: 0 18px 40px rgba(0,0,0,.38);
+      z-index:5;
+      gap:12px;
+    }
+    .tb-left,.tb-right{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+
+    .energy-tabs{
+      position:absolute; top:72px; left:12px; right:12px;
+      display:flex; gap:10px; flex-wrap:wrap;
+      z-index:5;
+    }
+    .etab{
+      padding:10px 12px;
+      border-radius:14px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.03);
+      color: rgba(215,242,255,.88);
+      font-size:12px;
+      cursor:pointer;
+      user-select:none;
+      display:flex; gap:8px; align-items:center;
+      transition:.15s ease;
+    }
+    .etab:hover{
+      border-color: rgba(0,212,255,.22);
+      box-shadow: 0 0 0 4px rgba(0,212,255,.06);
+    }
+    .etab.active{
+      border-color: rgba(0,212,255,.28);
+      background: rgba(0,212,255,.06);
+      color: rgba(215,242,255,.96);
+      box-shadow: 0 0 0 4px rgba(0,212,255,.06);
+    }
+    .etab i{
+      width:22px; height:22px; border-radius:10px;
+      display:grid; place-items:center;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.14);
+    }
+
+    .stage{
+      position:absolute; inset: 128px 12px 12px 12px;
+      border-radius: 18px;
+      border: 1px solid rgba(120, 180, 255, 0.10);
+      background:
+        radial-gradient(900px 600px at 30% 20%, rgba(0, 212, 255, 0.10), transparent 55%),
+        radial-gradient(700px 500px at 90% 30%, rgba(46, 229, 157, 0.07), transparent 55%),
+        linear-gradient(180deg, rgba(8, 10, 16, 0.10), rgba(8, 10, 16, 0.25));
+      overflow:hidden;
+    }
+    .grid{
+      position:absolute; inset:0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-size:70px 70px;
+      opacity:.25;
+      transform: skewY(-6deg) translateY(-30px);
+      pointer-events:none;
+    }
+
+    .content{
+      position:absolute; inset: 14px;
+      display:grid; grid-template-rows: auto 1fr;
+      gap:12px; padding:12px;
+      z-index:2;
+    }
+
+    .section-bar{
+      display:flex; gap:10px; flex-wrap:wrap;
+      align-items:center; justify-content:space-between;
+    }
+    .section-left{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .section-right{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+
+    .meters-grid{
+      display:grid;
+      grid-template-columns: repeat( auto-fill, minmax(290px, 1fr) );
+      gap:12px;
+      overflow:auto;
+      padding-right:4px;
+    }
+
+    .mcard{
+      border-radius:18px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.08);
+      padding:12px;
+      position:relative;
+      overflow:hidden;
+    }
+    .mhead{
+      display:flex; align-items:flex-start; justify-content:space-between;
+      gap:10px; margin-bottom:10px;
+    }
+    .mname{ min-width:0; }
+    .mname b{
+      display:block; font-size:12px; letter-spacing:.2px;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 220px;
+    }
+    .mname span{
+      display:block; font-size:11px; color: rgba(159,182,199,.9);
+      margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 220px;
+    }
+    .mtools{ display:flex; gap:8px; flex:0 0 auto; }
+    .mini{
+      width:34px; height:34px; border-radius:12px;
+      display:grid; place-items:center;
+      background: rgba(0,0,0,.14);
+      border: 1px solid rgba(255,255,255,.08);
+      cursor:pointer; transition:.15s ease; user-select:none;
+    }
+    .mini:hover{
+      border-color: rgba(0,212,255,.22);
+      box-shadow: 0 0 0 4px rgba(0,212,255,.06);
+      transform: translateY(-1px);
+    }
+
+    .meter-wrap{
+      display:grid; grid-template-columns: 1fr;
+      gap:10px; align-items:center; justify-items:center;
+    }
+
+    .gsvg{ width: 100%; max-width: 330px; height: auto; display:block; }
+    .readout{
+      width:100%;
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px; padding:10px 12px;
+      border-radius:14px;
+      background: rgba(0,0,0,.14);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .readout .v{ font-weight:900; font-size:18px; font-variant-numeric: tabular-nums; }
+    .readout .u{ font-size:11px; color: rgba(159,182,199,.92); white-space:nowrap; }
+
+    .subrow{
+      width:100%;
+      display:flex; gap:8px; flex-wrap:wrap;
+      align-items:center; justify-content:space-between;
+      margin-top:6px;
+    }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:8px 10px;
+      border-radius:999px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.14);
+      font-size:11px;
+      color: rgba(215,242,255,.92);
+    }
+    .pill .bdot{
+      width:8px;height:8px;border-radius:999px;
+      background: var(--cyan2);
+      box-shadow: 0 0 12px rgba(42,166,255,.55);
+    }
+
+    .modal-backdrop{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.55);
+      display:none; align-items:center; justify-content:center;
+      padding:18px; z-index: 50;
+    }
+    .modal{
+      width:min(720px, 100%);
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(18, 26, 44, 0.92), rgba(10, 14, 26, 0.86));
+      border: 1px solid rgba(120,180,255,.22);
+      backdrop-filter: var(--blur);
+      box-shadow: 0 20px 80px rgba(0,0,0,.65);
+      overflow:hidden;
+    }
+    .modal .mh{
+      padding:12px 12px 10px;
+      display:flex; align-items:center; justify-content:space-between;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.02);
+    }
+    .modal .mh strong{ font-size:13px; }
+    .modal .mb{
+      padding:12px;
+      display:grid; grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+    .modal .mb .card{ padding:12px; }
+    .modal .mf{
+      padding:12px;
+      border-top: 1px solid rgba(255,255,255,.08);
+      display:flex; justify-content:flex-end; gap:10px;
+      background: rgba(255,255,255,.02);
+    }
+
+    @media (max-width: 1080px){
+      body{ overflow:auto; }
+      .app{ height:auto; grid-template-columns: 1fr; }
+      .main{ min-height: 780px; }
+    }
+    @media (max-width: 720px){
+      .modal .mb{ grid-template-columns: 1fr; }
+      .stage{ inset: 140px 12px 12px 12px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <aside class="panel left">
+      <div class="hdr">
+        <strong>Compteurs temps réel</strong>
+        <button class="btn-icon" id="btnReset" title="Réinitialiser">⟲</button>
+      </div>
+
+      <div class="body">
+        <div class="card">
+          <h3>Connexion GTB</h3>
+          <div class="sub">
+            Démo / WebSocket (JSON) / Manuel (fonction <b>updateMeter(id,val)</b>).
+          </div>
+
+          <div class="field">
+            <label>Mode</label>
+            <select id="modeSel">
+              <option value="demo">Démo (simulation)</option>
+              <option value="ws">WebSocket (JSON)</option>
+              <option value="manual">Manuel (API JS)</option>
+            </select>
+          </div>
+
+          <div class="field" id="wsField" style="display:none">
+            <label>URL WebSocket</label>
+            <input class="inp" id="wsUrl" value="ws://localhost:1880/ws/meters" />
+            <div class="sub" style="margin-top:6px">
+              Format : <b>{"id":"ELEC_001","value":123.4}</b> ou <b>{"updates":[{"id":"...","value":...}]}</b>
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:10px">
+            <button class="btn" id="btnConnect">Démarrer</button>
+            <button class="btn btn-ghost" id="btnStop">Stop</button>
+          </div>
+
+          <div class="note" style="margin-top:10px">
+            Pour brancher ta GTB : Node-RED (BACnet/Modbus/OPC) → WebSocket → navigateur.
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Import compteurs (Excel / CSV / JSON)</h3>
+          <div class="sub">
+            Colonnes : <b>energy</b>, <b>id</b>, <b>name</b>, <b>unit</b>, <b>max</b>, <b>value</b>, <b>location</b>, <b>topic</b>.
+          </div>
+
+          <div class="row" style="margin-top:10px">
+            <input type="file" id="fileInp" class="inp" accept=".xlsx,.xls,.csv,.json" />
+          </div>
+
+          <div class="row" style="margin-top:10px">
+            <button class="btn" id="btnImport">Importer</button>
+            <button class="btn btn-ghost" id="btnExportJson">Exporter JSON</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Créer un compteur</h3>
+          <div class="sub">Ajoute autant de compteurs que tu veux.</div>
+
+          <div class="field">
+            <label>Énergie</label>
+            <select id="cEnergy">
+              <option value="elec">Électricité</option>
+              <option value="eau">Eau</option>
+              <option value="chaud">Énergie chaude</option>
+              <option value="froid">Énergie froide</option>
+              <option value="gaz">Gaz</option>
+              <option value="air">Air comprimé</option>
+              <option value="autre">Autre</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>ID (unique)</label>
+            <input class="inp" id="cId" placeholder="EX: ELEC_001" />
+          </div>
+
+          <div class="field">
+            <label>Nom</label>
+            <input class="inp" id="cName" placeholder="EX: TGBT Général" />
+          </div>
+
+          <div class="row" style="margin-top:10px">
+            <div style="flex:1">
+              <div class="field" style="margin-top:0">
+                <label>Unité</label>
+                <select id="cUnit">
+                  <option value="kWh">kWh</option>
+                  <option value="MWh">MWh</option>
+                  <option value="m³">m³</option>
+                  <option value="Nm³">Nm³</option>
+                  <option value="kW">kW</option>
+                  <option value="°C">°C</option>
+                </select>
+              </div>
+            </div>
+            <div style="flex:1">
+              <div class="field" style="margin-top:0">
+                <label>Max (échelle)</label>
+                <input class="inp" id="cMax" type="number" value="10000" />
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Valeur initiale</label>
+            <input class="inp" id="cVal" type="number" value="0" />
+          </div>
+
+          <div class="field">
+            <label>Emplacement (option)</label>
+            <input class="inp" id="cLoc" placeholder="EX: Local TGBT" />
+          </div>
+
+          <div class="field">
+            <label>Topic GTB (option)</label>
+            <input class="inp" id="cTopic" placeholder="EX: gtb/elec/tgbt" />
+          </div>
+
+          <div class="row" style="margin-top:10px">
+            <button class="btn" id="btnAdd">Ajouter</button>
+            <button class="btn btn-ghost" id="btnAddDemo">+ pack démo</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Actions</h3>
+          <div class="row">
+            <button class="btn btn-ghost" id="btnClearEnergy">Vider l'énergie active</button>
+            <button class="btn btn-danger" id="btnClearAll">Tout supprimer</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>État</h3>
+          <div class="row">
+            <div class="chip"><span class="dot"></span><span id="statusTxt">Prêt</span></div>
+            <div class="chip">Compteurs: <b id="countTxt">0</b></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="panel main">
+      <div class="topbar">
+        <div class="tb-left">
+          <div class="chip"><span class="dot"></span><span style="font-weight:800">ENERGISME</span></div>
+          <div class="chip">Page: <b>Compteurs temps réel</b></div>
+          <div class="chip" id="chipEnergy">Électricité</div>
+        </div>
+        <div class="tb-right">
+          <button class="btn-icon" id="btnOpenHelp" title="Aide">?</button>
+          <button class="btn-icon" id="btnOpenSettings" title="Réglages">⚙️</button>
+        </div>
+      </div>
+
+      <div class="energy-tabs" id="energyTabs"></div>
+
+      <div class="stage">
+        <div class="grid"></div>
+
+        <div class="content">
+          <div class="section-bar">
+            <div class="section-left">
+              <div class="chip">Énergie: <b id="energyTitle">Électricité</b></div>
+              <div class="chip">Unité par défaut: <b id="unitTitle">kWh</b></div>
+              <div class="chip">Mode: <b id="modeTitle">Démo</b></div>
+            </div>
+
+            <div class="section-right">
+              <button class="btn btn-ghost" id="btnSortName">Trier (nom)</button>
+              <button class="btn btn-ghost" id="btnSortVal">Trier (valeur)</button>
+              <button class="btn" id="btnNewFromTop">+ Nouveau compteur</button>
+            </div>
+          </div>
+
+          <div class="meters-grid" id="metersGrid"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="modalBack">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="mh">
+        <strong id="modalTitle">Réglages compteur</strong>
+        <button class="btn-icon" id="btnCloseModal" title="Fermer">✕</button>
+      </div>
+      <div class="mb">
+        <div class="card">
+          <h3>Valeur</h3>
+          <div class="sub">Test / valeur réelle.</div>
+          <div class="field">
+            <label>Valeur</label>
+            <input class="inp" type="number" id="mVal" value="0" />
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn" id="btnApplyVal">Appliquer</button>
+            <button class="btn btn-ghost" id="btnRandomVal">Aléatoire</button>
+          </div>
+
+          <div class="field">
+            <label>Animation</label>
+            <select id="mAnim">
+              <option value="smooth">Fluide</option>
+              <option value="snap">Instantané</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Infos</h3>
+          <div class="field"><label>Nom</label><input class="inp" id="mName" /></div>
+          <div class="field"><label>Unité</label><input class="inp" id="mUnit" /></div>
+          <div class="field"><label>Max (échelle)</label><input class="inp" type="number" id="mMax" /></div>
+          <div class="field"><label>Emplacement</label><input class="inp" id="mLoc" /></div>
+          <div class="field"><label>Topic</label><input class="inp" id="mTopic" /></div>
+        </div>
+      </div>
+
+      <div class="mf">
+        <button class="btn btn-danger" id="btnDeleteMeter">Supprimer</button>
+        <button class="btn" id="btnSaveMeter">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const ENERGIES = [
+      { key:"elec", label:"Électricité", icon:"⚡", defaultUnit:"kWh" },
+      { key:"eau",  label:"Eau", icon:"💧", defaultUnit:"m³" },
+      { key:"chaud",label:"Énergie chaude", icon:"🔥", defaultUnit:"MWh" },
+      { key:"froid",label:"Énergie froide", icon:"❄️", defaultUnit:"MWh" },
+      { key:"gaz",  label:"Gaz", icon:"🟠", defaultUnit:"Nm³" },
+      { key:"air",  label:"Air comprimé", icon:"🌬️", defaultUnit:"Nm³" },
+      { key:"autre",label:"Autre", icon:"🧩", defaultUnit:"kWh" },
+    ];
+
+    const $ = (q, root=document) => root.querySelector(q);
+
+    const energyTabs = $("#energyTabs");
+    const chipEnergy = $("#chipEnergy");
+    const energyTitle = $("#energyTitle");
+    const unitTitle = $("#unitTitle");
+    const modeTitle = $("#modeTitle");
+    const metersGrid = $("#metersGrid");
+    const statusTxt = $("#statusTxt");
+    const countTxt = $("#countTxt");
+
+    let activeEnergy = "elec";
+
+    function setActiveEnergy(key){
+      activeEnergy = key;
+      const e = ENERGIES.find(x=>x.key===key) || ENERGIES[0];
+      chipEnergy.textContent = e.label;
+      energyTitle.textContent = e.label;
+      unitTitle.textContent = e.defaultUnit;
+      [...energyTabs.querySelectorAll(".etab")].forEach(t=>{
+        t.classList.toggle("active", t.dataset.key === key);
+      });
+      renderMeters();
+    }
+
+    function buildEnergyTabs(){
+      energyTabs.innerHTML = ENERGIES.map(e=>`
+        <div class="etab ${e.key===activeEnergy?'active':''}" data-key="${e.key}">
+          <i>${e.icon}</i><span>${e.label}</span>
+        </div>
+      `).join("");
+      energyTabs.addEventListener("click", (ev)=>{
+        const tab = ev.target.closest(".etab");
+        if(!tab) return;
+        setActiveEnergy(tab.dataset.key);
+      });
+    }
+    buildEnergyTabs();
+
+    const STORAGE_KEY = "ENERGISME_RT_METERS_V1";
+    const SETTINGS_KEY = "ENERGISME_RT_SETTINGS_V1";
+
+    function loadMeters(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw) return [];
+        const arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr : [];
+      }catch(e){ return []; }
+    }
+    function saveMeters(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(meters));
+      countTxt.textContent = String(meters.length);
+    }
+
+    function loadSettings(){
+      try{
+        const raw = localStorage.getItem(SETTINGS_KEY);
+        if(!raw) return { mode:"demo", wsUrl: $("#wsUrl").value };
+        const s = JSON.parse(raw);
+        return { mode: s.mode || "demo", wsUrl: s.wsUrl || $("#wsUrl").value };
+      }catch(e){ return { mode:"demo", wsUrl: $("#wsUrl").value }; }
+    }
+    function saveSettings(){ localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); }
+
+    let meters = loadMeters();
+    let settings = loadSettings();
+    countTxt.textContent = String(meters.length);
+
+    function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+    function lerp(a,b,t){ return a + (b-a)*t; }
+
+    function valueToAngle(v, vmin, vmax){
+      const t = (v - vmin) / (vmax - vmin || 1);
+      return lerp(-120, 120, clamp(t, 0, 1));
+    }
+
+    function formatVal(v){
+      if (Math.abs(v) >= 1000) return v.toLocaleString("fr-FR", { maximumFractionDigits: 0 });
+      if (Math.abs(v) >= 100) return v.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
+      return v.toLocaleString("fr-FR", { maximumFractionDigits: 2 });
+    }
+
+    function escapeHtml(str){
+      return (""+str)
+        .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+    }
+
+    function gaugeSVG(m){
+      return `
+      <svg class="gsvg" viewBox="0 0 520 340" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="g_glow_${m.id}" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="4" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+
+          <linearGradient id="g_arc_${m.id}" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="rgba(0,212,255,.55)"/>
+            <stop offset="1" stop-color="rgba(46,229,157,.35)"/>
+          </linearGradient>
+
+          <linearGradient id="g_needle_${m.id}" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#b80b1a"/>
+            <stop offset="1" stop-color="#ff2e53"/>
+          </linearGradient>
+        </defs>
+
+        <path d="M100 250 A160 160 0 0 1 420 250"
+              fill="none" stroke="rgba(255,255,255,.10)"
+              stroke-width="22" stroke-linecap="round"/>
+
+        <path id="arc_${m.id}"
+              d="M100 250 A160 160 0 0 1 420 250"
+              fill="none" stroke="url(#g_arc_${m.id})"
+              stroke-width="10" stroke-linecap="round"
+              opacity=".95" filter="url(#g_glow_${m.id})"
+              stroke-dasharray="0 999"/>
+
+        <g id="ticks_${m.id}" opacity=".90"></g>
+
+        <g>
+          <circle cx="260" cy="250" r="44" fill="rgba(0,0,0,.14)" stroke="rgba(255,255,255,.10)"/>
+          <circle cx="260" cy="250" r="22" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.10)"/>
+          <circle cx="260" cy="250" r="6" fill="rgba(215,242,255,.75)"/>
+        </g>
+
+        <g id="needle_${m.id}" transform="translate(260 250) rotate(-120)">
+          <path d="M-10 10 L10 10 L160 0 L10 -10 L-10 -10 Z" fill="url(#g_needle_${m.id})" opacity=".95"/>
+          <circle cx="0" cy="0" r="16" fill="rgba(0,0,0,.22)" stroke="rgba(255,255,255,.14)"/>
+        </g>
+
+        <text x="260" y="150" text-anchor="middle" fill="rgba(215,242,255,.92)" font-size="18" font-weight="800">${escapeHtml(m.unit || "")}</text>
+
+        <g transform="translate(160 172)">
+          <rect x="0" y="0" width="200" height="46" rx="10" fill="rgba(0,0,0,.18)" stroke="rgba(255,255,255,.10)"/>
+          <text id="odo_${m.id}" x="100" y="31" text-anchor="middle"
+                fill="rgba(215,242,255,.95)" font-size="22" font-weight="900"
+                style="letter-spacing:2px">${formatVal(m.value || 0)}</text>
+        </g>
+      </svg>`;
+    }
+
+    function buildTicks(m){
+      const g = document.getElementById(`ticks_${m.id}`);
+      if(!g) return;
+      g.innerHTML = "";
+
+      const cx=260, cy=250, r0=150;
+      const minor = 41;
+      const majorEvery = 5;
+
+      for(let i=0; i<=minor; i++){
+        const t = i / minor;
+        const ang = lerp(-120, 120, t) * Math.PI/180;
+        const isMajor = (i % majorEvery === 0);
+
+        const len = isMajor ? 18 : 10;
+        const w = isMajor ? 3 : 2;
+        const opacity = isMajor ? 0.65 : 0.35;
+
+        const x1 = cx + Math.cos(ang) * (r0);
+        const y1 = cy + Math.sin(ang) * (r0);
+        const x2 = cx + Math.cos(ang) * (r0 - len);
+        const y2 = cy + Math.sin(ang) * (r0 - len);
+
+        const line = document.createElementNS("http://www.w3.org/2000/svg","line");
+        line.setAttribute("x1", x1); line.setAttribute("y1", y1);
+        line.setAttribute("x2", x2); line.setAttribute("y2", y2);
+        line.setAttribute("stroke", "rgba(215,242,255,1)");
+        line.setAttribute("stroke-opacity", opacity);
+        line.setAttribute("stroke-width", w);
+        line.setAttribute("stroke-linecap", "round");
+        g.appendChild(line);
+
+        if(isMajor){
+          const vmax = Number(m.max ?? 100);
+          const v = Math.round( lerp(0, vmax, t) );
+          const tx = cx + Math.cos(ang) * (r0 - 32);
+          const ty = cy + Math.sin(ang) * (r0 - 32) + 5;
+
+          const text = document.createElementNS("http://www.w3.org/2000/svg","text");
+          text.setAttribute("x", tx);
+          text.setAttribute("y", ty);
+          text.setAttribute("text-anchor","middle");
+          text.setAttribute("fill","rgba(215,242,255,.55)");
+          text.setAttribute("font-size","14");
+          text.setAttribute("font-weight","800");
+          text.textContent = String(v);
+          g.appendChild(text);
+        }
+      }
+    }
+
+    const gaugeState = new Map();
+    function setNeedle(meterId, angleDeg, snap=false){
+      const el = document.getElementById(`needle_${meterId}`);
+      if(!el) return;
+
+      if(snap){
+        el.setAttribute("transform", `translate(260 250) rotate(${angleDeg})`);
+        const st = gaugeState.get(meterId) || {};
+        gaugeState.set(meterId, { ...st, curAngle: angleDeg, targetAngle: angleDeg });
+        return;
+      }
+
+      let st = gaugeState.get(meterId);
+      if(!st){
+        st = { curAngle: angleDeg, targetAngle: angleDeg, anim: null };
+        gaugeState.set(meterId, st);
+        el.setAttribute("transform", `translate(260 250) rotate(${angleDeg})`);
+        return;
+      }
+      st.targetAngle = angleDeg;
+      if(st.anim) return;
+
+      const step = ()=>{
+        st.anim = requestAnimationFrame(step);
+        st.curAngle = lerp(st.curAngle, st.targetAngle, 0.12);
+        if(Math.abs(st.curAngle - st.targetAngle) < 0.2){
+          st.curAngle = st.targetAngle;
+          cancelAnimationFrame(st.anim);
+          st.anim = null;
+        }
+        el.setAttribute("transform", `translate(260 250) rotate(${st.curAngle})`);
+      };
+      st.anim = requestAnimationFrame(step);
+    }
+
+    function setArc(m, v){
+      const arc = document.getElementById(`arc_${m.id}`);
+      if(!arc) return;
+      const vmax = Number(m.max ?? 100);
+      const t = clamp(v / (vmax || 1), 0, 1);
+      const full = 520;
+      arc.setAttribute("stroke-dasharray", `${Math.max(0, full*t)} ${full}`);
+    }
+
+    function setOdo(m, v){
+      const odo = document.getElementById(`odo_${m.id}`);
+      if(odo) odo.textContent = formatVal(v);
+    }
+
+    function energyLabel(key){ return (ENERGIES.find(x=>x.key===key) || ENERGIES[0]).label; }
+    function energyDefaultUnit(key){ return (ENERGIES.find(x=>x.key===key) || ENERGIES[0]).defaultUnit; }
+
+    function renderMeters(){
+      const list = meters.filter(m=> (m.energy||"elec") === activeEnergy);
+
+      metersGrid.innerHTML = list.length ? list.map(m=>`
+        <div class="mcard" data-id="${m.id}">
+          <div class="mhead">
+            <div class="mname">
+              <b title="${escapeHtml(m.name)}">${escapeHtml(m.name || m.id)}</b>
+              <span title="${escapeHtml(m.location||"")}">${escapeHtml(m.location||"")}</span>
+            </div>
+            <div class="mtools">
+              <div class="mini" title="Réglages" data-act="edit">⚙️</div>
+              <div class="mini" title="Test +1%" data-act="plus">＋</div>
+            </div>
+          </div>
+
+          <div class="meter-wrap">
+            ${gaugeSVG(m)}
+
+            <div class="readout">
+              <div class="v" id="valtxt_${m.id}">${formatVal(m.value||0)}</div>
+              <div class="u">${escapeHtml(m.unit || energyDefaultUnit(m.energy))} • max ${formatVal(Number(m.max||0))}</div>
+            </div>
+
+            <div class="subrow">
+              <div class="pill"><span class="bdot"></span><span>ID:</span><b>${escapeHtml(m.id)}</b></div>
+              <div class="pill"><span class="bdot" style="background:var(--green);box-shadow:0 0 12px rgba(46,229,157,.55)"></span><span>Topic:</span><b>${escapeHtml(m.topic||"-")}</b></div>
+            </div>
+          </div>
+        </div>
+      `).join("") : `
+        <div class="card" style="grid-column:1/-1">
+          <h3>Aucun compteur pour ${energyLabel(activeEnergy)}</h3>
+          <div class="sub">Ajoute-en à gauche ou importe un fichier.</div>
+        </div>
+      `;
+
+      list.forEach(m=>{
+        buildTicks(m);
+        const vmax = Number(m.max ?? 100);
+        const ang = valueToAngle(Number(m.value||0), 0, vmax);
+        setNeedle(m.id, ang, true);
+        setArc(m, Number(m.value||0));
+      });
+
+      metersGrid.onclick = (ev)=>{
+        const btn = ev.target.closest(".mini");
+        if(!btn) return;
+        const card = ev.target.closest(".mcard");
+        if(!card) return;
+        const id = card.dataset.id;
+        const act = btn.dataset.act;
+        const m = meters.find(x=>x.id===id);
+        if(!m) return;
+
+        if(act==="edit") openMeterModal(m.id);
+        if(act==="plus"){
+          const inc = (Number(m.max||100) * 0.01);
+          updateMeter(m.id, Number(m.value||0) + inc);
+        }
+      };
+
+      countTxt.textContent = String(meters.length);
+    }
+
+    function normalizeId(s){
+      return (s||"").trim().replaceAll(" ", "_").replace(/[^A-Za-z0-9_\-]/g, "").toUpperCase();
+    }
+
+    function addMeter(m){
+      if(!m.id) return alert("ID manquant");
+      if(meters.some(x=>x.id===m.id)) return alert("ID déjà utilisé : " + m.id);
+      meters.push(m);
+      saveMeters();
+      renderMeters();
+    }
+
+    function deleteMeter(id){
+      const idx = meters.findIndex(x=>x.id===id);
+      if(idx<0) return;
+      meters.splice(idx,1);
+      saveMeters();
+      renderMeters();
+    }
+
+    let currentMeterAnimMode = "smooth";
+    window.updateMeter = function(id, value, unit){
+      const m = meters.find(x=>x.id===id);
+      if(!m) return false;
+      const v = Number(value);
+      if(Number.isNaN(v)) return false;
+
+      m.value = v;
+      if(unit) m.unit = unit;
+
+      const vmax = Number(m.max ?? 100);
+      const ang = valueToAngle(v, 0, vmax);
+      const snap = (currentMeterAnimMode === "snap");
+
+      setNeedle(m.id, ang, snap);
+      setArc(m, v);
+      setOdo(m, v);
+
+      const vtxt = document.getElementById(`valtxt_${m.id}`);
+      if(vtxt) vtxt.textContent = formatVal(v);
+
+      saveMeters();
+      return true;
+    };
+
+    let demoTimer = null;
+    let ws = null;
+
+    function stopStreams(){
+      if(demoTimer){ clearInterval(demoTimer); demoTimer=null; }
+      if(ws){ try{ ws.close(); }catch(e){} ws=null; }
+    }
+    function status(t){ statusTxt.textContent = t; }
+
+    function startDemo(){
+      stopStreams();
+      status("Démo en cours…");
+      demoTimer = setInterval(()=>{
+        meters.filter(m => (m.energy||"elec") === activeEnergy).forEach(m=>{
+          const vmax = Number(m.max||100);
+          const cur = Number(m.value||0);
+          const drift = (Math.random()*2-1) * (vmax*0.008);
+          const next = clamp(cur + drift, 0, vmax*1.05);
+          window.updateMeter(m.id, next);
+        });
+      }, 1200);
+    }
+
+    function startWS(){
+      stopStreams();
+      const url = ($("#wsUrl").value || "").trim();
+      if(!url) return alert("URL WebSocket vide");
+      status("Connexion WebSocket…");
+      try{ ws = new WebSocket(url); }
+      catch(e){ status("Erreur WS"); return alert("WebSocket impossible: " + e); }
+
+      ws.onopen = ()=> status("WebSocket connecté");
+      ws.onclose = ()=> status("WebSocket fermé");
+      ws.onerror = ()=> status("WebSocket erreur");
+      ws.onmessage = (ev)=>{
+        let msg = null;
+        try{ msg = JSON.parse(ev.data); }catch(e){ return; }
+        if(msg && Array.isArray(msg.updates)){
+          msg.updates.forEach(u=>{
+            if(u && u.id!=null && u.value!=null) window.updateMeter(String(u.id), Number(u.value), u.unit);
+          });
+          return;
+        }
+        if(msg && msg.id!=null && msg.value!=null){
+          window.updateMeter(String(msg.id), Number(msg.value), msg.unit);
+        }
+      };
+    }
+
+    function splitCSVLine(line){
+      const res=[]; let cur=""; let q=false;
+      for(let i=0;i<line.length;i++){
+        const c=line[i];
+        if(c === '"'){
+          if(q && line[i+1] === '"'){ cur+='"'; i++; }
+          else q = !q;
+        }else if(c === "," && !q){
+          res.push(cur); cur="";
+        }else{
+          cur+=c;
+        }
+      }
+      res.push(cur);
+      return res;
+    }
+
+    function parseCSV(text){
+      const lines = text.replace(/\r/g,"").split("\n").filter(l=>l.trim().length);
+      if(!lines.length) return [];
+      const headers = splitCSVLine(lines[0]).map(h=>h.trim());
+      const out = [];
+      for(let i=1;i<lines.length;i++){
+        const cols = splitCSVLine(lines[i]);
+        const row = {};
+        headers.forEach((h,idx)=> row[h] = (cols[idx] ?? "").trim());
+        out.push(row);
+      }
+      return out;
+    }
+
+    function rowsToMeters(rows){
+      const created = [];
+      for(const r of rows){
+        const energy = (r.energy || r.Energy || r.ENERGY || activeEnergy || "elec").toString().trim().toLowerCase();
+        const id = normalizeId(r.id || r.ID || r.Id || "");
+        if(!id) continue;
+
+        const name = (r.name || r.Name || r.NOM || r.nom || id).toString().trim();
+        const unit = (r.unit || r.Unit || r.UNIT || energyDefaultUnit(energy)).toString().trim();
+        const max = Number((r.max || r.Max || r.MAX || 10000));
+        const value = Number((r.value || r.Value || r.VALEUR || r.valeur || 0));
+        const location = (r.location || r.Location || r.LOCATION || "").toString().trim();
+        const topic = (r.topic || r.Topic || r.TOPIC || "").toString().trim();
+
+        const existing = meters.find(m=>m.id===id);
+        if(existing){
+          existing.energy = energy;
+          existing.name = name;
+          existing.unit = unit;
+          if(Number.isFinite(max)) existing.max = max;
+          if(Number.isFinite(value)) existing.value = value;
+          existing.location = location;
+          existing.topic = topic;
+          continue;
+        }
+
+        created.push({
+          energy, id, name, unit,
+          max: Number.isFinite(max) ? max : 10000,
+          value: Number.isFinite(value) ? value : 0,
+          location, topic
+        });
+      }
+      return created;
+    }
+
+    async function importFile(file){
+      const ext = (file.name.split(".").pop() || "").toLowerCase();
+
+      if(ext === "json"){
+        const text = await file.text();
+        let obj = null;
+        try{ obj = JSON.parse(text); }catch(e){ return alert("JSON invalide"); }
+        const rows = Array.isArray(obj) ? obj : (Array.isArray(obj.meters) ? obj.meters : []);
+        rowsToMeters(rows).forEach(addMeter);
+        status("Import JSON OK");
+        return;
+      }
+
+      if(ext === "csv"){
+        const text = await file.text();
+        rowsToMeters(parseCSV(text)).forEach(addMeter);
+        status("Import CSV OK");
+        return;
+      }
+
+      if(ext === "xlsx" || ext === "xls"){
+        const buf = await file.arrayBuffer();
+        const wb = XLSX.read(buf, { type:"array" });
+        const wsName = wb.SheetNames[0];
+        const ws = wb.Sheets[wsName];
+        const rows = XLSX.utils.sheet_to_json(ws, { defval:"" });
+        rowsToMeters(rows).forEach(addMeter);
+        status("Import Excel OK");
+        return;
+      }
+
+      alert("Format non supporté: " + ext);
+    }
+
+    function exportJSON(){
+      const blob = new Blob([JSON.stringify(meters, null, 2)], { type:"application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "energisime_compteurs_temps_reel.json";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(a.href), 600);
+    }
+
+    const modeSel = $("#modeSel");
+    const wsField = $("#wsField");
+
+    function applyModeUI(){
+      const mode = modeSel.value;
+      settings.mode = mode;
+      settings.wsUrl = $("#wsUrl").value;
+      saveSettings();
+
+      wsField.style.display = (mode === "ws") ? "" : "none";
+      modeTitle.textContent = (mode === "demo") ? "Démo" : (mode === "ws" ? "WebSocket" : "Manuel");
+    }
+
+    modeSel.value = settings.mode || "demo";
+    $("#wsUrl").value = settings.wsUrl || $("#wsUrl").value;
+    applyModeUI();
+
+    modeSel.addEventListener("change", applyModeUI);
+    $("#wsUrl").addEventListener("input", applyModeUI);
+
+    $("#btnConnect").addEventListener("click", ()=>{
+      applyModeUI();
+      if(modeSel.value === "demo") startDemo();
+      if(modeSel.value === "ws") startWS();
+      if(modeSel.value === "manual"){ stopStreams(); status("Mode manuel (updateMeter)"); }
+    });
+
+    $("#btnStop").addEventListener("click", ()=>{ stopStreams(); status("Stop"); });
+
+    $("#btnImport").addEventListener("click", async ()=>{
+      const f = $("#fileInp").files[0];
+      if(!f) return alert("Choisis un fichier (xlsx/csv/json)");
+      await importFile(f);
+      saveMeters();
+      renderMeters();
+    });
+
+    $("#btnExportJson").addEventListener("click", exportJSON);
+
+    $("#btnAdd").addEventListener("click", ()=>{
+      const energy = $("#cEnergy").value;
+      const id = normalizeId($("#cId").value);
+      const name = ($("#cName").value||"").trim() || id;
+      const unit = ($("#cUnit").value||"").trim() || energyDefaultUnit(energy);
+      const max = Number($("#cMax").value || 10000);
+      const value = Number($("#cVal").value || 0);
+      const location = ($("#cLoc").value||"").trim();
+      const topic = ($("#cTopic").value||"").trim();
+
+      if(!id) return alert("ID obligatoire");
+      addMeter({ energy, id, name, unit,
+        max: Number.isFinite(max)?max:10000,
+        value: Number.isFinite(value)?value:0,
+        location, topic
+      });
+
+      setActiveEnergy(energy);
+      $("#cId").value = ""; $("#cName").value = ""; $("#cVal").value = "0";
+      status("Compteur ajouté");
+    });
+
+    $("#btnAddDemo").addEventListener("click", ()=>{
+      const pack = [
+        { energy:"elec", id:"ELEC_001", name:"TGBT Général", unit:"kWh", max:100000, value:2487, location:"Local TGBT", topic:"gtb/elec/tgbt" },
+        { energy:"elec", id:"ELEC_002", name:"CVC — CTA principale", unit:"kWh", max:60000, value:15230, location:"Toiture", topic:"gtb/elec/cta" },
+        { energy:"eau",  id:"EAU_001",  name:"Eau générale", unit:"m³", max:20000, value:1842, location:"Sous-sol", topic:"gtb/eau/general" },
+        { energy:"gaz",  id:"GAZ_001",  name:"Gaz chaufferie", unit:"Nm³", max:50000, value:9032, location:"Chaufferie", topic:"gtb/gaz/chauf" },
+        { energy:"froid",id:"FROID_001",name:"Energie froide", unit:"MWh", max:1200, value:312, location:"Local froid", topic:"gtb/froid/eg" },
+        { energy:"chaud",id:"CHAUD_001",name:"Energie chaude", unit:"MWh", max:1200, value:288, location:"Chaufferie", topic:"gtb/chaud/eg" },
+      ];
+      pack.forEach(m=>{ if(!meters.some(x=>x.id===m.id)) meters.push(m); });
+      saveMeters(); renderMeters(); status("Pack démo ajouté");
+    });
+
+    $("#btnClearEnergy").addEventListener("click", ()=>{
+      const before = meters.length;
+      meters = meters.filter(m => (m.energy||"elec") !== activeEnergy);
+      saveMeters(); renderMeters();
+      status(`Supprimés: ${before - meters.length} (${energyLabel(activeEnergy)})`);
+    });
+
+    $("#btnClearAll").addEventListener("click", ()=>{
+      if(!confirm("Supprimer TOUS les compteurs ?")) return;
+      meters = [];
+      saveMeters(); renderMeters();
+      status("Tous les compteurs supprimés");
+    });
+
+    $("#btnReset").addEventListener("click", ()=>{
+      if(!confirm("Réinitialiser la page (stop + re-render) ?")) return;
+      stopStreams(); renderMeters(); status("Réinitialisé");
+    });
+
+    $("#btnNewFromTop").addEventListener("click", ()=>{
+      $("#cEnergy").value = activeEnergy;
+      $("#cUnit").value = energyDefaultUnit(activeEnergy);
+      $("#cId").focus();
+    });
+
+    $("#btnSortName").addEventListener("click", ()=>{
+      meters.sort((a,b)=> (a.name||"").localeCompare(b.name||"", "fr", { sensitivity:"base" }));
+      saveMeters(); renderMeters(); status("Tri: nom");
+    });
+    $("#btnSortVal").addEventListener("click", ()=>{
+      meters.sort((a,b)=> Number(b.value||0) - Number(a.value||0));
+      saveMeters(); renderMeters(); status("Tri: valeur");
+    });
+
+    // MODAL
+    const modalBack = $("#modalBack");
+    const btnCloseModal = $("#btnCloseModal");
+    const btnDeleteMeter = $("#btnDeleteMeter");
+    const btnSaveMeter = $("#btnSaveMeter");
+    const btnApplyVal = $("#btnApplyVal");
+    const btnRandomVal = $("#btnRandomVal");
+
+    const mVal = $("#mVal");
+    const mAnim = $("#mAnim");
+    const mName = $("#mName");
+    const mUnit = $("#mUnit");
+    const mMax = $("#mMax");
+    const mLoc = $("#mLoc");
+    const mTopic = $("#mTopic");
+
+    let modalMeterId = null;
+
+    function openMeterModal(id){
+      const m = meters.find(x=>x.id===id);
+      if(!m) return;
+      modalMeterId = id;
+      $("#modalTitle").textContent = "Réglages — " + (m.name || m.id);
+
+      mVal.value = String(m.value ?? 0);
+      mName.value = m.name ?? "";
+      mUnit.value = m.unit ?? "";
+      mMax.value = String(m.max ?? 10000);
+      mLoc.value = m.location ?? "";
+      mTopic.value = m.topic ?? "";
+
+      modalBack.style.display = "flex";
+    }
+
+    function closeModal(){ modalBack.style.display = "none"; modalMeterId = null; }
+    btnCloseModal.addEventListener("click", closeModal);
+    modalBack.addEventListener("click", (ev)=>{ if(ev.target === modalBack) closeModal(); });
+    window.addEventListener("keydown", (ev)=>{ if(ev.key === "Escape" && modalBack.style.display === "flex") closeModal(); });
+
+    btnApplyVal.addEventListener("click", ()=>{
+      if(!modalMeterId) return;
+      currentMeterAnimMode = mAnim.value || "smooth";
+      window.updateMeter(modalMeterId, Number(mVal.value));
+    });
+
+    btnRandomVal.addEventListener("click", ()=>{
+      if(!modalMeterId) return;
+      const m = meters.find(x=>x.id===modalMeterId);
+      if(!m) return;
+      const vmax = Number(m.max||100);
+      const v = Math.round(Math.random() * vmax * 100)/100;
+      mVal.value = String(v);
+      currentMeterAnimMode = mAnim.value || "smooth";
+      window.updateMeter(modalMeterId, v);
+    });
+
+    btnDeleteMeter.addEventListener("click", ()=>{
+      if(!modalMeterId) return;
+      if(!confirm("Supprimer ce compteur ?")) return;
+      deleteMeter(modalMeterId);
+      closeModal();
+      status("Compteur supprimé");
+    });
+
+    btnSaveMeter.addEventListener("click", ()=>{
+      if(!modalMeterId) return;
+      const m = meters.find(x=>x.id===modalMeterId);
+      if(!m) return;
+
+      m.name = (mName.value||"").trim() || m.id;
+      m.unit = (mUnit.value||"").trim() || energyDefaultUnit(m.energy);
+      const vmax = Number(mMax.value || m.max || 10000);
+      if(Number.isFinite(vmax)) m.max = vmax;
+      m.location = (mLoc.value||"").trim();
+      m.topic = (mTopic.value||"").trim();
+
+      const v = Number(mVal.value || m.value || 0);
+      if(Number.isFinite(v)) m.value = v;
+
+      saveMeters();
+      renderMeters();
+      closeModal();
+      status("Compteur mis à jour");
+    });
+
+    // HELP
+    $("#btnOpenHelp").addEventListener("click", ()=>{
+      alert(
+        "ENERGISME — Compteurs temps réel\n\n" +
+        "• Onglets en haut = énergies\n" +
+        "• Import Excel/CSV/JSON = génération automatique\n" +
+        "• L'aiguille bouge selon l'index\n" +
+        "• GTB: updateMeter(id,val) ou WebSocket {id,value}"
+      );
+    });
+    $("#btnOpenSettings").addEventListener("click", ()=> alert("Réglages généraux : à compléter si tu veux (seuils, alarmes, historique…)."));
+
+    // INIT
+    if(!meters.length){
+      meters = [
+        { energy:"elec", id:"ELEC_001", name:"TGBT Général", unit:"kWh", max:100000, value:2487, location:"Local TGBT", topic:"gtb/elec/tgbt" },
+        { energy:"elec", id:"ELEC_002", name:"CVC — CTA principale", unit:"kWh", max:60000, value:15230, location:"Toiture", topic:"gtb/elec/cta" },
+      ];
+      saveMeters();
+    }
+
+    setActiveEnergy(activeEnergy);
+    renderMeters();
+    applyModeUI();
+    if(modeSel.value === "demo") startDemo();
+  </script>
+</body>
+</html>

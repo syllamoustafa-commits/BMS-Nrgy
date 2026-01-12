@@ -1,0 +1,1780 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>ENERGISME – Dashboard Énergies</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+      :root {
+        --bg1: #020617;
+        --bg2: #000;
+        --cyan: #00d4ff;
+        --cyan2: #00aaff;
+        --text: #c8eaff;
+        --muted: #9ca3af;
+        --panel: rgba(0, 120, 255, 0.1);
+        --border: rgba(0, 212, 255, 0.28);
+        --shadow: 0 0 14px rgba(0, 180, 255, 0.16);
+        --radius: 16px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: radial-gradient(circle at top, var(--bg1), var(--bg2));
+        color: var(--text);
+      }
+
+      header {
+        padding: 14px 14px 10px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(0, 120, 200, 0.08);
+        position: sticky;
+        top: 0;
+        backdrop-filter: blur(6px);
+        z-index: 10;
+      }
+
+      h1 {
+        margin: 0;
+        text-align: center;
+        color: var(--cyan);
+        text-shadow: 0 0 12px #00cfff;
+        font-size: 18px;
+      }
+
+      .topbar {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .tab {
+        padding: 8px 14px;
+        border-radius: 999px;
+        border: 1px solid rgba(0, 212, 255, 0.55);
+        background: rgba(0, 120, 255, 0.18);
+        cursor: pointer;
+        user-select: none;
+        transition: 0.15s;
+        font-size: 13px;
+        white-space: nowrap;
+      }
+      .tab:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow);
+      }
+      .tab.active {
+        background: rgba(0, 220, 255, 0.22);
+        border-color: rgba(0, 220, 255, 0.75);
+        box-shadow: 0 0 16px rgba(0, 220, 255, 0.18);
+      }
+
+      .filters {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      select {
+        padding: 8px 10px;
+        border-radius: 12px;
+        border: 1px solid rgba(0, 212, 255, 0.35);
+        background: rgba(2, 6, 23, 0.55);
+        color: var(--text);
+        outline: none;
+      }
+
+      .chip {
+        border: 1px solid rgba(0, 212, 255, 0.25);
+        background: rgba(0, 120, 255, 0.12);
+        padding: 8px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        color: #bde8ff;
+        user-select: none;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 1fr 360px;
+        gap: 12px;
+        padding: 12px;
+        align-items: start;
+      }
+      @media (max-width: 1100px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+      .panel.allowOverflow {
+        overflow: visible;
+      }
+
+      .panelHeader {
+        padding: 12px 12px 10px;
+        border-bottom: 1px solid rgba(0, 212, 255, 0.18);
+        background: rgba(0, 120, 200, 0.08);
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .panelHeader h2 {
+        margin: 0;
+        font-size: 14px;
+        color: #bde8ff;
+      }
+
+      .chartWrap {
+        padding: 10px 12px 12px;
+      }
+
+      .small {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.3;
+      }
+
+      .tableWrap {
+        margin-top: 12px;
+        border-top: 1px solid rgba(0, 212, 255, 0.14);
+        padding-top: 12px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        overflow: hidden;
+        border-radius: 12px;
+        border: 1px solid rgba(0, 212, 255, 0.18);
+        background: rgba(2, 6, 23, 0.35);
+      }
+      thead th {
+        position: sticky;
+        top: 0;
+        background: rgba(0, 120, 200, 0.12);
+        color: #dff6ff;
+        font-weight: 600;
+        font-size: 12px;
+        border-bottom: 1px solid rgba(0, 212, 255, 0.18);
+        padding: 10px 8px;
+        text-align: right;
+        white-space: nowrap;
+      }
+      thead th:first-child,
+      thead th:nth-child(2) {
+        text-align: left;
+      }
+      tbody td {
+        border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+        padding: 10px 8px;
+        font-size: 12px;
+        text-align: right;
+        white-space: nowrap;
+      }
+      tbody tr:hover {
+        background: rgba(0, 212, 255, 0.06);
+      }
+      tbody td:first-child,
+      tbody td:nth-child(2) {
+        text-align: left;
+        white-space: normal;
+      }
+
+      .subpct {
+        display: block;
+        font-size: 10px;
+        margin-top: 4px;
+        opacity: 0.85;
+      }
+      .pctUp {
+        color: #ff6b6b;
+      }
+      .pctDown {
+        color: #22c55e;
+      }
+      .pctFlat {
+        color: #9ca3af;
+      }
+
+      .sideGrid {
+        display: grid;
+        grid-template-rows: auto auto auto;
+        gap: 12px;
+      }
+
+      .noteBox {
+        padding: 12px;
+      }
+      .noteTitle {
+        margin: 0 0 8px 0;
+        font-size: 13px;
+        color: #bde8ff;
+      }
+      .noteItem {
+        border: 1px solid rgba(0, 212, 255, 0.16);
+        background: rgba(2, 6, 23, 0.35);
+        border-radius: 12px;
+        padding: 10px;
+        margin: 8px 0;
+        font-size: 12px;
+        line-height: 1.35;
+      }
+      .badge {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 999px;
+        font-size: 11px;
+        border: 1px solid rgba(0, 212, 255, 0.25);
+        background: rgba(0, 120, 255, 0.12);
+        color: #bde8ff;
+        margin-right: 6px;
+        white-space: nowrap;
+      }
+      .badge.warn {
+        border-color: rgba(255, 107, 107, 0.55);
+        background: rgba(255, 107, 107, 0.1);
+        color: #ffd0d0;
+      }
+      .badge.good {
+        border-color: rgba(34, 197, 94, 0.55);
+        background: rgba(34, 197, 94, 0.1);
+        color: #ccffe0;
+      }
+      .badge.info {
+        border-color: rgba(56, 189, 248, 0.55);
+        background: rgba(56, 189, 248, 0.1);
+        color: #cfeeff;
+      }
+
+      .footerHint {
+        margin-top: 10px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", monospace;
+      }
+
+      /* ====== FILTER PANEL (dropdown multi-mois) ====== */
+      .filterBox {
+        padding: 12px;
+      }
+      .filterRow {
+        display: grid;
+        gap: 10px;
+      }
+      .filterLabel {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .dropdown {
+        position: relative;
+      }
+      .dropdownBtn {
+        width: 100%;
+        text-align: left;
+        padding: 10px 10px;
+        border-radius: 12px;
+        border: 1px solid rgba(0, 212, 255, 0.22);
+        background: rgba(2, 6, 23, 0.35);
+        color: var(--text);
+        cursor: pointer;
+        user-select: none;
+      }
+      .dropdownBtn:hover {
+        border-color: rgba(0, 220, 255, 0.55);
+      }
+      .dropdownMenu {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        right: 0;
+        z-index: 999;
+        border: 1px solid rgba(0, 212, 255, 0.22);
+        background: rgba(2, 6, 23, 0.95);
+        border-radius: 12px;
+        box-shadow: 0 0 18px rgba(0, 220, 255, 0.18);
+        overflow: hidden;
+        display: none;
+      }
+      .dropdownMenu.open {
+        display: block;
+      }
+      .menuHeader {
+        padding: 10px;
+        border-bottom: 1px solid rgba(0, 212, 255, 0.14);
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+      .menuHeader .miniBtn {
+        border: 1px solid rgba(0, 212, 255, 0.22);
+        background: rgba(0, 120, 255, 0.12);
+        color: #bde8ff;
+        font-size: 11px;
+        border-radius: 999px;
+        padding: 6px 10px;
+        cursor: pointer;
+      }
+      .menuHeader .miniBtn:hover {
+        border-color: rgba(0, 220, 255, 0.55);
+      }
+      .menuList {
+        max-height: 240px;
+        overflow: auto;
+        padding: 8px;
+      }
+      .menuItem {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 8px;
+        border-radius: 10px;
+        cursor: pointer;
+        user-select: none;
+      }
+      .menuItem:hover {
+        background: rgba(0, 212, 255, 0.08);
+      }
+      .menuItem input {
+        accent-color: #00d4ff;
+        cursor: pointer;
+      }
+
+      .planRow {
+        margin-top: 10px;
+      }
+      .planRow .tabs {
+        justify-content: center;
+      }
+
+      /* mini separateur dans commentaires */
+      .groupTitle {
+        margin: 10px 0 6px 0;
+        font-size: 12px;
+        color: #bde8ff;
+        opacity: 0.95;
+      }
+      .miniLine {
+        height: 1px;
+        background: rgba(0, 212, 255, 0.12);
+        margin: 10px 0;
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <h1>📊 ENERGISME – Dashboard Énergies (Consommations)</h1>
+
+      <div class="planRow">
+        <div class="tabs" id="planTabs"></div>
+      </div>
+
+      <div class="topbar">
+        <div class="tabs" id="tabs"></div>
+
+        <div class="filters">
+          <span class="chip" id="chipInfo">—</span>
+
+          <label
+            class="small"
+            style="display: flex; align-items: center; gap: 8px"
+          >
+            Année (N) :
+            <select id="yearSelect"></select>
+          </label>
+
+          <!-- ✅ nouveau: filtre période N / N-1 / N-2 -->
+          <label
+            class="small"
+            style="display: flex; align-items: center; gap: 8px"
+          >
+            Période :
+            <select id="periodSelect">
+              <option value="N">N (seul)</option>
+              <option value="N_N1" selected>N vs N-1</option>
+              <option value="N_N2">N vs N-2</option>
+              <option value="N_N1_N2">N vs N-1 vs N-2</option>
+            </select>
+          </label>
+        </div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <!-- MAIN -->
+      <div class="panel">
+        <div class="panelHeader">
+          <h2 id="panelTitle">Consommations mensuelles</h2>
+          <div class="small" id="panelSub">
+            Empilé par compteur • Valeurs = Δ index • comparaison selon
+            “Période”
+          </div>
+        </div>
+
+        <div class="chartWrap">
+          <canvas id="chart"></canvas>
+
+          <div class="tableWrap">
+            <div
+              class="panelHeader"
+              style="margin: 12px 0 10px 0; border-radius: 14px"
+            >
+              <h2>Relevés des consommations mensuelles (Δ index)</h2>
+              <div class="small" id="unitHint"></div>
+            </div>
+
+            <div style="overflow: auto; border-radius: 12px">
+              <table>
+                <thead id="thead"></thead>
+                <tbody id="tbody"></tbody>
+              </table>
+            </div>
+
+            <div class="footerHint">
+              * Les valeurs affichées ici sont des
+              <b>consommations</b> (différences d’index), pas des index.
+              <br />
+              * ✅ Si un compteur n’a pas d’index, sa conso est
+              <b>calculée</b> en somme de ses sous-compteurs (si disponibles).
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SIDEBAR -->
+      <div class="sideGrid">
+        <!-- FILTERS -->
+        <div class="panel allowOverflow">
+          <div class="panelHeader">
+            <h2>🎛️ Filtres</h2>
+            <span class="chip" id="chipFilter">—</span>
+          </div>
+
+          <div class="filterBox">
+            <div class="filterRow">
+              <div class="filterLabel small">
+                <span>Année affichée (N)</span>
+                <span class="mono" id="yearEcho">—</span>
+              </div>
+
+              <div class="small" style="opacity: 0.85">
+                ✅ Multi-sélection : tu peux cocher/décocher plusieurs mois sans
+                fermer. Clique <b>OK</b> pour fermer.
+                <br />
+                (si aucun mois sélectionné ⇒ <b>tous les mois</b>).
+              </div>
+
+              <div class="dropdown" id="monthDropdown">
+                <div class="filterLabel small">
+                  <span>Mois affichés</span>
+                  <span class="mono" id="monthsEcho">—</span>
+                </div>
+
+                <button class="dropdownBtn" id="monthBtn" type="button">
+                  — Sélectionner des mois —
+                </button>
+
+                <div class="dropdownMenu" id="monthMenu">
+                  <div class="menuHeader">
+                    <button class="miniBtn" id="btnAllMonths" type="button">
+                      Tout
+                    </button>
+                    <button class="miniBtn" id="btnClearMonths" type="button">
+                      Aucun
+                    </button>
+                    <button class="miniBtn" id="btnInvertMonths" type="button">
+                      Inverser
+                    </button>
+                    <button class="miniBtn" id="btnCloseMonths" type="button">
+                      OK
+                    </button>
+                  </div>
+                  <div class="menuList" id="monthList"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- COMMENTAIRES -->
+        <div class="panel">
+          <div class="panelHeader">
+            <h2>🧠 Commentaires automatiques</h2>
+            <span class="chip" id="chipScore">—</span>
+          </div>
+          <div class="noteBox" id="commentBox"></div>
+        </div>
+
+        <!-- PRECO -->
+        <div class="panel">
+          <div class="panelHeader">
+            <h2>🛠️ Préconisations automatiques</h2>
+            <span class="chip" id="chipReco">—</span>
+          </div>
+          <div class="noteBox" id="recoBox"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      /* ============================
+         SOURCES DONNÉES
+      ============================ */
+      const releves = JSON.parse(
+        localStorage.getItem("energisme_releves") || "{}"
+      );
+
+      const VALIDATED_ALL_KEY = "energisme_plan_comptage_all_v1";
+      let plansAll = [];
+      try {
+        plansAll = JSON.parse(localStorage.getItem(VALIDATED_ALL_KEY) || "[]");
+        if (!Array.isArray(plansAll)) plansAll = [];
+      } catch {
+        plansAll = [];
+      }
+
+      const planSingle = JSON.parse(
+        localStorage.getItem("energisme_plan_comptage") || "{}"
+      );
+      if (!plansAll.length && planSingle && planSingle.nodes)
+        plansAll = [planSingle];
+
+      if (!plansAll.length) {
+        alert(
+          "❌ Plan de comptage manquant : valide ton plan depuis le synoptique (bouton 'Valider le plan de comptage')."
+        );
+      }
+      if (!releves || !Object.keys(releves).length) {
+        console.warn(
+          "Données manquantes : localStorage['energisme_releves'] (relevés d’index)."
+        );
+      }
+
+      /* ============================
+         CONFIG
+      ============================ */
+      const energies = [
+        ["elec", "⚡ Électricité"],
+        ["eau", "💧 Eau"],
+        ["gaz", "🔥 Gaz"],
+        ["chaud", "♨️ Chaud"],
+        ["froid", "❄️ Froid"],
+        ["all", "📊 Synthèse"],
+      ];
+
+      const MONTHS = [
+        "01",
+        "02",
+        "03",
+        "04",
+        "05",
+        "06",
+        "07",
+        "08",
+        "09",
+        "10",
+        "11",
+        "12",
+      ];
+      const MONTH_LABELS = [
+        "Jan",
+        "Fév",
+        "Mar",
+        "Avr",
+        "Mai",
+        "Juin",
+        "Juil",
+        "Août",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Déc",
+      ];
+      const MONTH_NAMES = [
+        "Janvier",
+        "Février",
+        "Mars",
+        "Avril",
+        "Mai",
+        "Juin",
+        "Juillet",
+        "Août",
+        "Septembre",
+        "Octobre",
+        "Novembre",
+        "Décembre",
+      ];
+
+      // DOM
+      const tabsDiv = document.getElementById("tabs");
+      const planTabsDiv = document.getElementById("planTabs");
+      const yearSelect = document.getElementById("yearSelect");
+      const periodSelect = document.getElementById("periodSelect");
+
+      const chipInfo = document.getElementById("chipInfo");
+      const chipScore = document.getElementById("chipScore");
+      const chipReco = document.getElementById("chipReco");
+      const chipFilter = document.getElementById("chipFilter");
+
+      const commentBox = document.getElementById("commentBox");
+      const recoBox = document.getElementById("recoBox");
+      const unitHint = document.getElementById("unitHint");
+
+      const yearEcho = document.getElementById("yearEcho");
+      const monthsEcho = document.getElementById("monthsEcho");
+
+      const monthBtn = document.getElementById("monthBtn");
+      const monthMenu = document.getElementById("monthMenu");
+      const monthList = document.getElementById("monthList");
+      const btnAllMonths = document.getElementById("btnAllMonths");
+      const btnClearMonths = document.getElementById("btnClearMonths");
+      const btnInvertMonths = document.getElementById("btnInvertMonths");
+      const btnCloseMonths = document.getElementById("btnCloseMonths");
+
+      // Etat
+      let currentEnergy = "elec";
+      let currentYear = new Date().getFullYear();
+      let chart = null;
+
+      // ✅ multi-mois (Set vide => tous)
+      let selectedMonths = new Set();
+
+      // ✅ plan actif
+      let activePlanId =
+        (plansAll[0] &&
+          (plansAll[0].planId ||
+            plansAll[0].id ||
+            plansAll[0].planName ||
+            plansAll[0].name)) ||
+        "plan";
+
+      // ✅ période
+      let periodMode = periodSelect.value; // N / N_N1 / N_N2 / N_N1_N2
+
+      /* ============================
+         OUTILS
+      ============================ */
+      function safeNum(v) {
+        const n = Number(v);
+        return Number.isFinite(n) ? n : null;
+      }
+      function clamp(n, a, b) {
+        return Math.max(a, Math.min(b, n));
+      }
+      function sum(arr) {
+        return arr.reduce((acc, v) => acc + (Number.isFinite(v) ? v : 0), 0);
+      }
+
+      function fmt(v, decimals) {
+        if (v == null || !Number.isFinite(v)) return "—";
+        const d = Math.max(0, Math.min(3, decimals));
+        return v.toLocaleString("fr-FR", {
+          minimumFractionDigits: d,
+          maximumFractionDigits: d,
+        });
+      }
+      function pctChange(cur, prev) {
+        if (cur == null || prev == null) return null;
+        if (!Number.isFinite(cur) || !Number.isFinite(prev)) return null;
+        if (Math.abs(prev) < 1e-9) return null;
+        return ((cur - prev) / Math.abs(prev)) * 100;
+      }
+      function guessDecimalsForUnit(unit, energyKey) {
+        const u = String(unit || "").toLowerCase();
+        if (u.includes("kwh") || u.includes("wh")) return 0;
+        if (u.includes("m3") || u.includes("m³")) return 2;
+        if (u.includes("nm3") || u.includes("nm³")) return 2;
+        if (energyKey === "eau" || energyKey === "gaz") return 2;
+        return 1;
+      }
+
+      function colorForIndex(i) {
+        const palette = [
+          [34, 197, 94],
+          [56, 189, 248],
+          [250, 204, 21],
+          [244, 114, 182],
+          [168, 85, 247],
+          [251, 146, 60],
+          [45, 212, 191],
+          [248, 113, 113],
+          [99, 102, 241],
+          [163, 230, 53],
+        ];
+        const c = palette[i % palette.length];
+        return { r: c[0], g: c[1], b: c[2] };
+      }
+      function rgba(c, a) {
+        return `rgba(${c.r},${c.g},${c.b},${a})`;
+      }
+
+      function selectedMonthIndexes() {
+        if (!selectedMonths.size) return [...Array(12)].map((_, i) => i);
+        const idxs = [];
+        MONTHS.forEach((mm, i) => {
+          if (selectedMonths.has(mm)) idxs.push(i);
+        });
+        return idxs;
+      }
+
+      /* ============================
+         PLAN (bâtiment/locataire) + ARBRE
+      ============================ */
+      function planDisplayName(p) {
+        const kind = p.planKind || p.kind || "";
+        const icon =
+          kind === "building" ? "🏢" : kind === "tenant" ? "👤" : "📄";
+        const name = p.planName || p.name || "Plan";
+        return `${icon} ${name}`;
+      }
+      function getPlanKey(p) {
+        return p.planId || p.id || p.planName || p.name || "plan";
+      }
+      function sortPlans(plans) {
+        return [...plans].sort((a, b) => {
+          const ak = (a.planKind || a.kind) === "building" ? 0 : 1;
+          const bk = (b.planKind || b.kind) === "building" ? 0 : 1;
+          if (ak !== bk) return ak - bk;
+          const an = a.planName || a.name || "";
+          const bn = b.planName || b.name || "";
+          return an.localeCompare(bn);
+        });
+      }
+      function getActivePlan() {
+        const p = plansAll.find((x) => getPlanKey(x) === activePlanId);
+        return p || plansAll[0] || planSingle || {};
+      }
+
+      function metersForActivePlanAndEnergy(energyKey) {
+        const p = getActivePlan();
+        const nodes = Array.isArray(p.nodes) ? p.nodes : [];
+
+        let filtered = nodes;
+        if (energyKey !== "all")
+          filtered = nodes.filter((n) => (n.type || "") === energyKey);
+
+        // si plan = locataire, garder les compteurs affectés au locataire
+        const kind = p.planKind || p.kind || "";
+        const planId = p.planId || p.id || "";
+        if (kind === "tenant" && planId) {
+          filtered = filtered.filter((n) => (n.tenantPlanId || "") === planId);
+        }
+        return filtered;
+      }
+
+      function buildIndexMaps(nodes) {
+        const byId = new Map();
+        const children = new Map(); // parentId -> [childId]
+        const parentOf = new Map(); // childId -> parentId
+
+        nodes.forEach((n) => {
+          byId.set(n.id, n);
+          if (!children.has(n.id)) children.set(n.id, []);
+        });
+
+        nodes.forEach((n) => {
+          const p = (n.parent || "").trim();
+          if (p && byId.has(p)) {
+            parentOf.set(n.id, p);
+            if (!children.has(p)) children.set(p, []);
+            children.get(p).push(n.id);
+          }
+        });
+
+        // tri enfants par nom
+        for (const [pid, arr] of children.entries()) {
+          arr.sort((a, b) => {
+            const na = (byId.get(a)?.nom || a).toLowerCase();
+            const nb = (byId.get(b)?.nom || b).toLowerCase();
+            return na.localeCompare(nb);
+          });
+        }
+
+        // roots
+        const roots = nodes
+          .filter((n) => !parentOf.has(n.id))
+          .map((n) => n.id)
+          .sort((a, b) =>
+            (byId.get(a)?.nom || a).localeCompare(byId.get(b)?.nom || b)
+          );
+
+        return { byId, children, parentOf, roots };
+      }
+
+      /* ============================
+         RELEVES → conso
+         ✅ IMPORTANT: si pas d’index, on calcule compteur = somme des sous-compteurs (récursif)
+      ============================ */
+      function getIndex(year, mm, id) {
+        return releves?.[year]?.[mm]?.[id] ?? null;
+      }
+
+      function computeMonthlyConsoFromIndex(year, id) {
+        const out = Array(12).fill(null);
+        for (let m = 1; m <= 12; m++) {
+          const mm = String(m).padStart(2, "0");
+          const cur = safeNum(getIndex(year, mm, id));
+          if (cur == null) continue;
+
+          let prev = null;
+          if (m === 1) prev = safeNum(getIndex(year - 1, "12", id));
+          else
+            prev = safeNum(getIndex(year, String(m - 1).padStart(2, "0"), id));
+
+          if (prev == null) continue;
+          out[m - 1] = cur - prev;
+        }
+        return out;
+      }
+
+      // ✅ memo: year|id
+      const consoMemo = new Map();
+
+      // règle: si compteur a au moins 2 mois calculables via index → on garde index,
+      // sinon si enfants dispo → somme des enfants (et si mix → on garde ce qui existe et complète au besoin).
+      function computeMonthlyConsoSmart(year, id, tree, stack = []) {
+        const key = `${year}|${id}`;
+        if (consoMemo.has(key)) return consoMemo.get(key);
+
+        // cycle safety
+        if (stack.includes(id)) {
+          const out = Array(12).fill(null);
+          consoMemo.set(key, out);
+          return out;
+        }
+
+        const byIndex = computeMonthlyConsoFromIndex(year, id);
+        const idxCount = byIndex.filter((v) => Number.isFinite(v)).length;
+
+        const kids = tree.children.get(id) || [];
+        if (!kids.length) {
+          consoMemo.set(key, byIndex);
+          return byIndex;
+        }
+
+        // somme enfants
+        const childSums = Array(12).fill(null);
+        const childSeries = kids.map((cid) =>
+          computeMonthlyConsoSmart(year, cid, tree, stack.concat(id))
+        );
+
+        for (let i = 0; i < 12; i++) {
+          let has = false;
+          let s = 0;
+          for (const series of childSeries) {
+            const v = series[i];
+            if (Number.isFinite(v)) {
+              s += v;
+              has = true;
+            }
+          }
+          childSums[i] = has ? s : null;
+        }
+
+        // fusion
+        const out = Array(12).fill(null);
+        for (let i = 0; i < 12; i++) {
+          const a = byIndex[i];
+          const b = childSums[i];
+          if (Number.isFinite(a)) out[i] = a;
+          else if (Number.isFinite(b)) out[i] = b;
+          else out[i] = null;
+        }
+
+        // si presque rien via index → c’est “calculé”
+        if (idxCount < 2) out._computedFromChildren = true;
+
+        consoMemo.set(key, out);
+        return out;
+      }
+
+      function periodYears(yearN, mode) {
+        if (mode === "N") return [yearN];
+        if (mode === "N_N1") return [yearN, yearN - 1];
+        if (mode === "N_N2") return [yearN, yearN - 2];
+        if (mode === "N_N1_N2") return [yearN, yearN - 1, yearN - 2];
+        return [yearN, yearN - 1];
+      }
+
+      /* ============================
+         YEARS SELECT
+      ============================ */
+      function listYears() {
+        const keys = Object.keys(releves || {})
+          .map((x) => Number(x))
+          .filter(Number.isFinite);
+        const set = new Set(keys);
+        set.add(currentYear);
+        set.add(currentYear - 1);
+        set.add(currentYear - 2);
+        return [...set].sort((a, b) => a - b);
+      }
+
+      function renderYears() {
+        const years = listYears();
+        yearSelect.innerHTML = "";
+        years.forEach((y) => {
+          const opt = document.createElement("option");
+          opt.value = y;
+          opt.textContent = y;
+          if (y === currentYear) opt.selected = true;
+          yearSelect.appendChild(opt);
+        });
+        yearEcho.textContent = String(currentYear);
+      }
+
+      yearSelect.addEventListener("change", () => {
+        currentYear = Number(yearSelect.value);
+        yearEcho.textContent = String(currentYear);
+        consoMemo.clear();
+        renderAll();
+      });
+
+      periodSelect.addEventListener("change", () => {
+        periodMode = periodSelect.value;
+        renderAll();
+      });
+
+      /* ============================
+         MONTH MULTISELECT (dropdown)
+         ✅ ne ferme PAS à chaque click, ferme seulement sur OK / click extérieur
+      ============================ */
+      function closeMonthMenu() {
+        monthMenu.classList.remove("open");
+      }
+      function toggleMonthMenu() {
+        monthMenu.classList.toggle("open");
+      }
+
+      function updateMonthUI() {
+        const idxs = selectedMonthIndexes();
+        if (!selectedMonths.size) {
+          monthBtn.textContent = "Tous les mois";
+          monthsEcho.textContent = "Tous";
+          chipFilter.textContent = `Année ${currentYear} • Tous les mois • ${periodLabel()}`;
+        } else {
+          const labels = idxs.map((i) => MONTH_LABELS[i]).join(", ");
+          monthBtn.textContent = labels || "—";
+          monthsEcho.textContent = `${selectedMonths.size} mois`;
+          chipFilter.textContent = `Année ${currentYear} • ${
+            selectedMonths.size
+          } mois • ${periodLabel()}`;
+        }
+      }
+
+      function renderMonthList() {
+        monthList.innerHTML = "";
+        MONTHS.forEach((mm, i) => {
+          const row = document.createElement("div");
+          row.className = "menuItem";
+
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.checked = selectedMonths.has(mm);
+
+          const label = document.createElement("div");
+          label.textContent = `${MONTH_NAMES[i]} (${MONTH_LABELS[i]})`;
+          label.style.flex = "1";
+
+          row.appendChild(cb);
+          row.appendChild(label);
+
+          function toggle() {
+            cb.checked = !cb.checked;
+            if (cb.checked) selectedMonths.add(mm);
+            else selectedMonths.delete(mm);
+            updateMonthUI();
+            renderAll(); // ✅ applique en live
+          }
+
+          row.addEventListener("click", (e) => {
+            e.stopPropagation();
+            toggle();
+          });
+          cb.addEventListener("click", (e) => {
+            e.stopPropagation(); /* laisse l’état checkbox, on sync */
+            if (cb.checked) selectedMonths.add(mm);
+            else selectedMonths.delete(mm);
+            updateMonthUI();
+            renderAll();
+          });
+
+          monthList.appendChild(row);
+        });
+      }
+
+      monthBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleMonthMenu();
+      });
+
+      btnAllMonths.addEventListener("click", (e) => {
+        e.stopPropagation();
+        selectedMonths = new Set(MONTHS);
+        renderMonthList();
+        updateMonthUI();
+        renderAll();
+      });
+
+      btnClearMonths.addEventListener("click", (e) => {
+        e.stopPropagation();
+        selectedMonths = new Set(); // vide => tous
+        renderMonthList();
+        updateMonthUI();
+        renderAll();
+      });
+
+      btnInvertMonths.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const next = new Set();
+        MONTHS.forEach((mm) => {
+          if (!selectedMonths.has(mm)) next.add(mm);
+        });
+        selectedMonths = next;
+        renderMonthList();
+        updateMonthUI();
+        renderAll();
+      });
+
+      btnCloseMonths.addEventListener("click", (e) => {
+        e.stopPropagation();
+        closeMonthMenu();
+      });
+
+      document.addEventListener("click", (e) => {
+        if (!monthMenu.classList.contains("open")) return;
+        const dd = document.getElementById("monthDropdown");
+        if (!dd.contains(e.target)) closeMonthMenu();
+      });
+
+      function periodLabel() {
+        if (periodMode === "N") return "N seul";
+        if (periodMode === "N_N1") return "N vs N-1";
+        if (periodMode === "N_N2") return "N vs N-2";
+        if (periodMode === "N_N1_N2") return "N vs N-1 vs N-2";
+        return "N vs N-1";
+      }
+
+      /* ============================
+         PLAN TABS
+      ============================ */
+      function renderPlanTabs() {
+        planTabsDiv.innerHTML = "";
+        const sorted = sortPlans(plansAll);
+
+        if (sorted.length <= 1) {
+          if (sorted.length === 1) {
+            const only = document.createElement("div");
+            only.className = "tab active";
+            only.textContent = planDisplayName(sorted[0]);
+            planTabsDiv.appendChild(only);
+          }
+          return;
+        }
+
+        sorted.forEach((p) => {
+          const key = getPlanKey(p);
+          const b = document.createElement("div");
+          b.className = "tab" + (key === activePlanId ? " active" : "");
+          b.textContent = planDisplayName(p);
+          b.addEventListener("click", () => {
+            activePlanId = key;
+            consoMemo.clear();
+            renderPlanTabs();
+            renderAll();
+          });
+          planTabsDiv.appendChild(b);
+        });
+      }
+
+      /* ============================
+         CHART
+         ✅ maintenant support N / N-1 / N-2 + compteurs calculés
+      ============================ */
+      function buildStackedDatasets(years, nodes, monthIdxs, tree) {
+        const datasets = [];
+        nodes.forEach((n, i) => {
+          const c = colorForIndex(i);
+
+          years.forEach((yy, yi) => {
+            const seriesAll = computeMonthlyConsoSmart(yy, n.id, tree);
+            const d = monthIdxs.map((mi) => {
+              const v = seriesAll[mi];
+              if (v == null) return 0;
+              // pour chart: on garde 0 si négatif (sinon ça “casse” le stacked), mais on le signalera en commentaires
+              return Math.max(0, v);
+            });
+
+            const alpha = yi === 0 ? 0.78 : yi === 1 ? 0.28 : 0.18;
+            const stackName = `Y${yy}`; // évite mélange stack
+            datasets.push({
+              label: `${n.nom || n.id} (${yy})`,
+              data: d,
+              stack: stackName,
+              backgroundColor: rgba(c, alpha),
+              borderColor: rgba(c, Math.min(0.95, alpha + 0.2)),
+              borderWidth: 0,
+            });
+          });
+        });
+        return datasets;
+      }
+
+      function renderChart() {
+        const nodes = metersForActivePlanAndEnergy(currentEnergy);
+        const yearN = currentYear;
+        const years = periodYears(yearN, periodMode);
+
+        const monthIdxs = selectedMonthIndexes();
+        const labels = monthIdxs.map((i) => MONTH_LABELS[i]);
+        const monthNames = monthIdxs.map((i) => MONTH_NAMES[i]);
+
+        // arbre (pour calcul des compteurs)
+        const tree = buildIndexMaps(
+          metersForActivePlanAndEnergy(
+            currentEnergy === "all" ? "all" : currentEnergy
+          )
+        );
+
+        const datasets = buildStackedDatasets(years, nodes, monthIdxs, tree);
+
+        if (chart) chart.destroy();
+
+        chart = new Chart(document.getElementById("chart"), {
+          type: "bar",
+          data: { labels, datasets },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            interaction: { mode: "index", intersect: false },
+            plugins: {
+              legend: { labels: { color: "#c8eaff" } },
+              tooltip: {
+                callbacks: {
+                  title: (items) => {
+                    const idx = items?.[0]?.dataIndex ?? 0;
+                    const mn = monthNames[idx] || "";
+                    return `Consommations ${mn} (${years.join(" / ")})`;
+                  },
+                },
+              },
+            },
+            scales: {
+              x: {
+                stacked: true,
+                ticks: { color: "#c8eaff" },
+                grid: { color: "rgba(0,212,255,0.10)" },
+              },
+              y: {
+                stacked: true,
+                beginAtZero: true,
+                ticks: { color: "#c8eaff" },
+                grid: { color: "rgba(0,212,255,0.10)" },
+              },
+            },
+          },
+        });
+      }
+
+      /* ============================
+         TABLE
+         ✅ table = année N (comme avant) MAIS conso smart (index ou somme enfants)
+         ✅ et noms au lieu des IDs dans lecture/analyses
+      ============================ */
+      function renderTable() {
+        const nodes = metersForActivePlanAndEnergy(currentEnergy);
+        const yearN = currentYear;
+        const monthIdxs = selectedMonthIndexes();
+
+        // arbre pour conso calculée
+        const tree = buildIndexMaps(
+          metersForActivePlanAndEnergy(
+            currentEnergy === "all" ? "all" : currentEnergy
+          )
+        );
+
+        const colLabels = monthIdxs.map(
+          (i) => `${MONTH_LABELS[i]}-${String(yearN).slice(-2)}`
+        );
+
+        const thead = document.getElementById("thead");
+        thead.innerHTML = `
+          <tr>
+            <th style="min-width:110px;">Compteur</th>
+            <th style="min-width:240px;">Nom</th>
+            ${colLabels.map((m) => `<th>${m}</th>`).join("")}
+            <th>Total</th>
+          </tr>
+        `;
+
+        const tbody = document.getElementById("tbody");
+        tbody.innerHTML = "";
+
+        // Unité hint
+        if (currentEnergy === "all") {
+          unitHint.textContent = "Unité : mixte (selon compteur).";
+        } else {
+          const freq = new Map();
+          nodes.forEach((n) => {
+            const u = String(n.unite || "").trim();
+            if (!u) return;
+            freq.set(u, (freq.get(u) || 0) + 1);
+          });
+          let bestU = "",
+            bestC = 0;
+          for (const [u, c] of freq.entries()) {
+            if (c > bestC) {
+              bestC = c;
+              bestU = u;
+            }
+          }
+          const unitCommon =
+            bestU ||
+            (currentEnergy === "eau"
+              ? "m³"
+              : currentEnergy === "gaz"
+              ? "Nm³"
+              : "kWh");
+          unitHint.textContent = `Unité affichée : ${unitCommon} (si ton plan a l’unité par compteur, elle est utilisée).`;
+        }
+
+        nodes.forEach((n) => {
+          const unit = String(n.unite || "").trim();
+          const decimals = guessDecimalsForUnit(unit, n.type || currentEnergy);
+
+          const consoAll = computeMonthlyConsoSmart(yearN, n.id, tree); // 12
+          const conso = monthIdxs.map((mi) => consoAll[mi]);
+
+          const pctVsPrev = conso.map((v, idx) => {
+            const prev = idx > 0 ? conso[idx - 1] : null;
+            return pctChange(v, prev);
+          });
+
+          const total = sum(
+            conso.map((v) => (Number.isFinite(v) ? Math.max(0, v) : 0))
+          );
+
+          const tds = conso
+            .map((v, idx) => {
+              const neg = Number.isFinite(v) && v < 0;
+              const val = v == null ? null : neg ? v : Math.max(0, v);
+
+              const pct = pctVsPrev[idx];
+              let pctClass = "pctFlat";
+              if (pct != null) {
+                if (pct > 5) pctClass = "pctUp";
+                else if (pct < -5) pctClass = "pctDown";
+              }
+              const pctTxt =
+                pct == null ? "" : `${pct > 0 ? "+" : ""}${pct.toFixed(0)}%`;
+
+              return `
+              <td title="${
+                neg
+                  ? "Attention : consommation négative (index en baisse / reset / erreur)"
+                  : ""
+              }">
+                ${
+                  neg
+                    ? `<span class="mono" style="color:#ff6b6b;">${fmt(
+                        val,
+                        decimals
+                      )}</span>`
+                    : fmt(val, decimals)
+                }
+                ${
+                  pctTxt
+                    ? `<span class="subpct ${pctClass}">${pctTxt}</span>`
+                    : `<span class="subpct pctFlat"> </span>`
+                }
+              </td>
+            `;
+            })
+            .join("");
+
+          const name = n.nom || n.id;
+          const isCalc = !!consoAll._computedFromChildren;
+
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td class="mono">${n.id}</td>
+            <td>
+              ${name}
+              <span class="small">(${unit || "—"})</span>
+              ${
+                isCalc
+                  ? `<span class="subpct pctFlat">calculé (somme sous-compteurs)</span>`
+                  : ``
+              }
+            </td>
+            ${tds}
+            <td><b>${fmt(total, decimals)}</b></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      /* ============================
+         ANALYSE AUTO
+         ✅ Simplifiée + par affiliation (Général → sous-compteurs → sous-sous)
+         ✅ utilise les NOMS (pas IDs)
+      ============================ */
+      function buildAffiliationGroups(nodes, tree) {
+        // On construit des “groupes” autour des roots (compteurs généraux)
+        const groups = [];
+        tree.roots.forEach((rid) => {
+          const r = tree.byId.get(rid);
+          if (!r) return;
+          groups.push({
+            rootId: rid,
+            root: r,
+            children: tree.children.get(rid) || [],
+          });
+        });
+        return groups;
+      }
+
+      function topContributors(yearN, monthIdxs, parentId, tree, limit = 3) {
+        const kids = tree.children.get(parentId) || [];
+        const rows = kids.map((cid) => {
+          const n = tree.byId.get(cid);
+          const sAll = computeMonthlyConsoSmart(yearN, cid, tree);
+          const vals = monthIdxs
+            .map((mi) => sAll[mi])
+            .filter((v) => Number.isFinite(v) && v >= 0);
+          const total = sum(vals);
+          return { id: cid, name: n?.nom || cid, total };
+        });
+        rows.sort((a, b) => b.total - a.total);
+        return rows.filter((r) => r.total > 0).slice(0, limit);
+      }
+
+      function detectAnomalies(yearN, monthIdxs, id, tree) {
+        const sAll = computeMonthlyConsoSmart(yearN, id, tree);
+        const series = monthIdxs.map((mi) => sAll[mi]);
+        const negIdxs = [];
+        series.forEach((v, j) => {
+          if (Number.isFinite(v) && v < 0) negIdxs.push(j);
+        });
+
+        const vals = series.filter((v) => Number.isFinite(v) && v >= 0);
+        let spike = null;
+
+        if (vals.length >= 4) {
+          const avg = sum(vals) / vals.length;
+          const variance =
+            vals.reduce((acc, v) => acc + Math.pow(v - avg, 2), 0) /
+            vals.length;
+          const sd = Math.sqrt(variance);
+          // spike = mois > avg + 2sd
+          for (let j = 0; j < series.length; j++) {
+            const v = series[j];
+            if (!Number.isFinite(v) || v < 0) continue;
+            if (sd > 0 && v > avg + 2 * sd) {
+              spike = { j, v, avg };
+              break;
+            }
+          }
+        }
+
+        return { negIdxs, spike, series };
+      }
+
+      function buildAnalysis() {
+        const nodes = metersForActivePlanAndEnergy(currentEnergy);
+        const yearN = currentYear;
+        const monthIdxs = selectedMonthIndexes();
+
+        const tree = buildIndexMaps(nodes);
+
+        let score = 100;
+        const blocks = [];
+
+        // Synthèse globale (période sélectionnée)
+        const totals = monthIdxs.map(() => 0);
+        nodes.forEach((n) => {
+          const sAll = computeMonthlyConsoSmart(yearN, n.id, tree);
+          monthIdxs.forEach((mi, j) => {
+            const v = sAll[mi];
+            if (Number.isFinite(v) && v >= 0) totals[j] += v;
+          });
+        });
+        const totalSel = sum(totals);
+        const maxVal = Math.max(...totals);
+        const maxIdx = totals.indexOf(maxVal);
+        const maxMonthName = maxIdx >= 0 ? MONTH_NAMES[monthIdxs[maxIdx]] : "—";
+
+        blocks.push({
+          level: "info",
+          title: "Synthèse (période sélectionnée)",
+          text: `Total estimé : ${fmt(
+            totalSel,
+            0
+          )} • Mois le plus consommateur : ${maxMonthName} (${fmt(
+            maxVal,
+            0
+          )}).`,
+        });
+
+        // Affiliation
+        const groups = buildAffiliationGroups(nodes, tree);
+
+        groups.forEach((g) => {
+          const rootName = g.root?.nom || g.rootId;
+
+          // total root
+          const rootSeries = computeMonthlyConsoSmart(yearN, g.rootId, tree);
+          const rootVals = monthIdxs
+            .map((mi) => rootSeries[mi])
+            .filter((v) => Number.isFinite(v) && v >= 0);
+          const rootTotal = sum(rootVals);
+
+          const { negIdxs, spike } = detectAnomalies(
+            yearN,
+            monthIdxs,
+            g.rootId,
+            tree
+          );
+
+          // group title (léger)
+          blocks.push({
+            level: "info",
+            title: `📌 ${rootName}`,
+            text: `Total période : ${fmt(rootTotal, 0)}.`,
+          });
+
+          // anomalies root
+          if (negIdxs.length) {
+            const mList = negIdxs
+              .map((j) => MONTH_LABELS[monthIdxs[j]])
+              .join(", ");
+            blocks.push({
+              level: "warn",
+              title: `${rootName} : consommation négative`,
+              text: `Détectée sur ${mList} (reset / erreur relevé / remplacement possible).`,
+            });
+            score -= 10;
+          }
+          if (spike) {
+            const mName = MONTH_NAMES[monthIdxs[spike.j]];
+            blocks.push({
+              level: "warn",
+              title: `${rootName} : pic de consommation`,
+              text: `${mName} = ${fmt(
+                spike.v,
+                0
+              )} (au-dessus de la moyenne ${fmt(spike.avg, 0)}).`,
+            });
+            score -= 6;
+          }
+
+          // top sous-compteurs
+          const topKids = topContributors(yearN, monthIdxs, g.rootId, tree, 3);
+          if (topKids.length) {
+            blocks.push({
+              level: "info",
+              title: `${rootName} : principaux contributeurs`,
+              text: topKids
+                .map((t) => `${t.name} (${fmt(t.total, 0)})`)
+                .join(" • "),
+            });
+          } else if (g.children.length) {
+            blocks.push({
+              level: "info",
+              title: `${rootName} : sous-compteurs`,
+              text: "Sous-compteurs présents mais pas assez de valeurs calculables sur la sélection.",
+            });
+            score -= 2;
+          }
+
+          // sous-sous (si un topKid a lui-même des enfants)
+          topKids.forEach((kid) => {
+            const kidChildren = tree.children.get(kid.id) || [];
+            if (!kidChildren.length) return;
+
+            const topSub = topContributors(yearN, monthIdxs, kid.id, tree, 2);
+            if (topSub.length) {
+              blocks.push({
+                level: "info",
+                title: `↳ ${kid.name} : détail`,
+                text: topSub
+                  .map((t) => `${t.name} (${fmt(t.total, 0)})`)
+                  .join(" • "),
+              });
+            }
+          });
+
+          blocks.push({ level: "info", title: "—", text: "" }); // mini séparation
+        });
+
+        // score
+        score = clamp(score, 0, 100);
+
+        // Nettoyage: enlève les séparateurs vides en fin
+        while (blocks.length && blocks[blocks.length - 1].title === "—")
+          blocks.pop();
+
+        return { score, blocks, tree };
+      }
+
+      function buildRecommendations(analysis) {
+        const nodes = metersForActivePlanAndEnergy(currentEnergy);
+        const yearN = currentYear;
+        const monthIdxs = selectedMonthIndexes();
+        const tree = analysis?.tree || buildIndexMaps(nodes);
+
+        const recos = [];
+        let negCount = 0;
+        let missingCount = 0;
+
+        nodes.forEach((n) => {
+          const sAll = computeMonthlyConsoSmart(yearN, n.id, tree);
+          const series = monthIdxs.map((mi) => sAll[mi]);
+          const hasAny = series.some((v) => Number.isFinite(v));
+          if (!hasAny) missingCount++;
+
+          negCount += series.filter((v) => Number.isFinite(v) && v < 0).length;
+        });
+
+        // ✅ synthèse orientée affiliation (moins de blabla)
+        recos.push({
+          level: "good",
+          title: "Synthèse d’action (ordre)",
+          text: "1) Corriger les relevés/anomalies (négatifs, resets) • 2) Cibler les pics (mois max) • 3) Mettre des seuils d’alerte et routine mensuelle.",
+        });
+
+        if (missingCount) {
+          recos.push({
+            level: "info",
+            title: "Fiabiliser les relevés",
+            text: `${missingCount} compteur(s) sans conso calculable sur la période : compléter index N et N-1 (et fixer un jour de relevé constant).`,
+          });
+        }
+
+        if (negCount) {
+          recos.push({
+            level: "warn",
+            title: "Vérifier resets / remplacements",
+            text: `Consommations négatives détectées : vérifier remise à zéro, remplacement compteur, ou erreur de saisie (ajouter une trace).`,
+          });
+        }
+
+        const e = currentEnergy;
+        if (e === "eau") {
+          recos.push({
+            level: "info",
+            title: "Eau : plan rapide",
+            text: "Test nocturne, contrôle chasses WC, appoint CTA/adiabatique, électrovannes, purgeurs, surpresseur.",
+          });
+        } else if (e === "elec") {
+          recos.push({
+            level: "info",
+            title: "Élec : plan rapide",
+            text: "Horaires CTA/éclairage, marche forcée, consignes, comparatif GTB sur le mois du pic, vérif puissances en veille.",
+          });
+        } else if (e === "froid" || e === "chaud") {
+          recos.push({
+            level: "info",
+            title: "Thermique : plan rapide",
+            text: "Croiser avec météo/DJU, consignes, vannes/servomoteurs, filtres CTA, modes dégradés, équilibrage.",
+          });
+        } else if (e === "gaz") {
+          recos.push({
+            level: "info",
+            title: "Gaz : plan rapide",
+            text: "Vérifier cycles chaudières, ECS, cohérence index/factures, relances et consignes.",
+          });
+        } else {
+          recos.push({
+            level: "info",
+            title: "Synthèse multi-énergies",
+            text: "Prioriser les zones/compteurs avec pics/dérives puis fiabiliser le process mensuel.",
+          });
+        }
+
+        recos.push({
+          level: "good",
+          title: "Seuils d’alerte simples",
+          text: "Alerte : +25% vs moyenne de référence, ou +15% vs mois précédent, sur compteurs critiques.",
+        });
+
+        return recos.slice(0, 10);
+      }
+
+      function renderSidePanels() {
+        const analysis = buildAnalysis();
+        const { score, blocks } = analysis;
+
+        chipScore.textContent = `Score conso : ${score}/100`;
+        chipScore.style.borderColor =
+          score < 70 ? "rgba(255,107,107,0.55)" : "rgba(34,197,94,0.55)";
+        chipScore.style.background =
+          score < 70 ? "rgba(255,107,107,0.10)" : "rgba(34,197,94,0.10)";
+        chipScore.style.color = score < 70 ? "#ffd0d0" : "#ccffe0";
+
+        // Commentaires: affichage + clean (affiliation)
+        commentBox.innerHTML = "";
+        if (!blocks.length) {
+          commentBox.innerHTML =
+            '<div class="noteItem"><span class="badge info">Info</span><b>Aucune analyse</b><div>Pas assez de données calculables sur la sélection.</div></div>';
+        } else {
+          blocks.forEach((b) => {
+            if (b.title === "—") {
+              const divSep = document.createElement("div");
+              divSep.className = "miniLine";
+              commentBox.appendChild(divSep);
+              return;
+            }
+
+            const badgeClass =
+              b.level === "warn"
+                ? "warn"
+                : b.level === "good"
+                ? "good"
+                : "info";
+            const div = document.createElement("div");
+            div.className = "noteItem";
+            div.innerHTML = `
+              <div style="margin-bottom:6px;">
+                <span class="badge ${badgeClass}">${
+              b.level === "warn" ? "Alerte" : b.level === "good" ? "OK" : "Info"
+            }</span>
+                <b>${b.title}</b>
+              </div>
+              <div>${b.text}</div>
+            `;
+            commentBox.appendChild(div);
+          });
+        }
+
+        // Préco
+        const recos = buildRecommendations(analysis);
+        chipReco.textContent = `${recos.length} actions`;
+        recoBox.innerHTML = "";
+        if (!recos.length) {
+          recoBox.innerHTML =
+            '<div class="noteItem"><span class="badge info">Info</span><b>Rien à proposer</b><div>Pas assez de données sur la sélection.</div></div>';
+        } else {
+          recos.forEach((r) => {
+            const badgeClass =
+              r.level === "warn"
+                ? "warn"
+                : r.level === "good"
+                ? "good"
+                : "info";
+            const div = document.createElement("div");
+            div.className = "noteItem";
+            div.innerHTML = `
+              <div style="margin-bottom:6px;">
+                <span class="badge ${badgeClass}">${
+              r.level === "warn"
+                ? "Prioritaire"
+                : r.level === "good"
+                ? "Recommandé"
+                : "Conseil"
+            }</span>
+                <b>${r.title}</b>
+              </div>
+              <div>${r.text}</div>
+            `;
+            recoBox.appendChild(div);
+          });
+        }
+
+        // chipInfo
+        const nodesCount = metersForActivePlanAndEnergy(currentEnergy).length;
+        const monthsTxt = !selectedMonths.size
+          ? "Tous"
+          : [...selectedMonths].sort().join(",");
+        const p = getActivePlan();
+        const pName = p.planName || p.name || "Plan";
+        chipInfo.textContent = `${nodesCount} compteurs • ${currentEnergy.toUpperCase()} • N=${currentYear} • période=${periodLabel()} • mois=${monthsTxt} • ${pName}`;
+      }
+
+      /* ============================
+         TABLES / TABS énergie
+      ============================ */
+      function renderTabs() {
+        tabsDiv.innerHTML = "";
+        energies.forEach((e) => {
+          const b = document.createElement("div");
+          b.className = "tab" + (e[0] === currentEnergy ? " active" : "");
+          b.textContent = e[1];
+          b.addEventListener("click", () => {
+            currentEnergy = e[0];
+            consoMemo.clear();
+            renderTabs();
+            renderAll();
+          });
+          tabsDiv.appendChild(b);
+        });
+      }
+
+      /* ============================
+         RENDER ALL
+      ============================ */
+      function renderAll() {
+        document.getElementById("panelTitle").textContent =
+          "Consommations mensuelles";
+        document.getElementById(
+          "panelSub"
+        ).textContent = `Empilé par compteur • Valeurs = Δ index • Comparaison : ${periodLabel()}`;
+
+        updateMonthUI();
+        renderChart();
+        renderTable();
+        renderSidePanels();
+      }
+
+      /* ============================
+         INIT
+      ============================ */
+      selectedMonths = new Set(); // vide => tous
+
+      if (plansAll.length) activePlanId = getPlanKey(sortPlans(plansAll)[0]);
+      else activePlanId = "plan";
+
+      renderPlanTabs();
+      renderTabs();
+      renderYears();
+      renderMonthList();
+      updateMonthUI();
+      renderAll();
+    </script>
+  </body>
+</html>

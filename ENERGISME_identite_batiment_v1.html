@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ENERGISME — Identité bâtiment (v1)</title>
+    <style>
+      :root {
+        --bg0: #070b12;
+        --bg1: #0b1220;
+        --panel: rgba(20, 28, 45, 0.66);
+        --panel2: rgba(18, 26, 44, 0.82);
+        --stroke: rgba(120, 180, 255, 0.22);
+        --stroke2: rgba(120, 180, 255, 0.35);
+        --text: #d7f2ff;
+        --muted: #9fb6c7;
+        --cyan: #00d4ff;
+        --cyan2: #2aa6ff;
+        --green: #2ee59d;
+        --orange: #ffb84d;
+        --red: #ff5c7a;
+        --shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+        --blur: blur(14px);
+        --r16: 16px;
+        --r20: 20px;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        color: var(--text);
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial,
+          sans-serif;
+        background: radial-gradient(
+            1000px 700px at 30% -10%,
+            rgba(0, 212, 255, 0.18),
+            transparent 55%
+          ),
+          radial-gradient(
+            900px 700px at 120% 10%,
+            rgba(46, 229, 157, 0.1),
+            transparent 60%
+          ),
+          radial-gradient(
+            900px 800px at 40% 120%,
+            rgba(42, 166, 255, 0.1),
+            transparent 60%
+          ),
+          linear-gradient(180deg, var(--bg1), var(--bg0));
+        min-height: 100vh;
+      }
+      .app {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 18px;
+        display: grid;
+        grid-template-columns: 1fr 440px;
+        gap: 14px;
+      }
+      .panel {
+        background: linear-gradient(
+          180deg,
+          rgba(18, 26, 44, 0.72),
+          rgba(10, 14, 26, 0.55)
+        );
+        border: 1px solid var(--stroke);
+        border-radius: var(--r20);
+        backdrop-filter: var(--blur);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        position: relative;
+      }
+      .hdr {
+        padding: 14px 14px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid rgba(120, 180, 255, 0.12);
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .hdr h1 {
+        margin: 0;
+        font-size: 14px;
+        letter-spacing: 0.2px;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 10px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        color: var(--text);
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      .content {
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .card {
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 12px;
+      }
+      .card h2 {
+        margin: 0 0 10px 0;
+        font-size: 12px;
+        letter-spacing: 0.2px;
+        color: rgba(215, 242, 255, 0.92);
+      }
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .grid3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 10px;
+      }
+      .row {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .label {
+        font-size: 11px;
+        color: rgba(159, 182, 199, 0.92);
+      }
+      input[type="text"],
+      input[type="number"],
+      textarea,
+      select {
+        width: 100%;
+        padding: 11px 12px;
+        border-radius: 14px;
+        outline: none;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.18);
+        color: rgba(215, 242, 255, 0.92);
+        font-size: 13px;
+      }
+      textarea {
+        min-height: 90px;
+        resize: vertical;
+      }
+      .actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        padding: 12px 14px 14px;
+        border-top: 1px solid rgba(120, 180, 255, 0.1);
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .btn {
+        padding: 11px 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(0, 212, 255, 0.22);
+        background: rgba(0, 212, 255, 0.08);
+        color: rgba(215, 242, 255, 0.95);
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 12px;
+      }
+      .btn:hover {
+        background: rgba(0, 212, 255, 0.12);
+      }
+      .btn.alt {
+        border-color: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .btn.danger {
+        border-color: rgba(255, 92, 122, 0.28);
+        background: rgba(255, 92, 122, 0.08);
+      }
+      .btn.danger:hover {
+        background: rgba(255, 92, 122, 0.12);
+      }
+      .muted {
+        color: rgba(159, 182, 199, 0.92);
+        font-size: 11px;
+        line-height: 1.35;
+      }
+      .checkRow {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding: 10px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(0, 0, 0, 0.14);
+      }
+      .chk {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.03);
+        font-size: 12px;
+        color: rgba(215, 242, 255, 0.92);
+        user-select: none;
+      }
+      .chk input {
+        accent-color: var(--cyan);
+      }
+      .miniNote {
+        margin-top: 8px;
+        padding: 10px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(0, 0, 0, 0.12);
+        font-size: 11px;
+        color: rgba(159, 182, 199, 0.92);
+      }
+      .split {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .preview {
+        padding: 12px;
+      }
+      .preview textarea {
+        min-height: 520px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", monospace;
+        font-size: 12px;
+      }
+      .toast {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        width: min(420px, calc(100% - 36px));
+        border-radius: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(10, 14, 26, 0.85);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+        padding: 12px 12px;
+        display: none;
+        z-index: 50;
+      }
+      .toast.show {
+        display: block;
+      }
+      .toast b {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 12px;
+      }
+      .toast span {
+        font-size: 11px;
+        color: rgba(159, 182, 199, 0.92);
+        line-height: 1.35;
+      }
+      @media (max-width: 980px) {
+        .app {
+          grid-template-columns: 1fr;
+        }
+        .preview textarea {
+          min-height: 360px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="app">
+      <!-- FORM -->
+      <section class="panel">
+        <div class="hdr">
+          <h1>Identité bâtiment — ENERGISME</h1>
+          <div class="chip" id="statusChip">Non enregistré</div>
+        </div>
+
+        <div class="content">
+          <div class="card">
+            <h2>Informations générales</h2>
+            <div class="grid2">
+              <div class="row">
+                <div class="label">Nom du site *</div>
+                <input
+                  id="b_name"
+                  type="text"
+                  placeholder="Ex: ASKIA / BELAIA / ..."
+                />
+              </div>
+              <div class="row">
+                <div class="label">Type bâtiment</div>
+                <input
+                  id="b_type"
+                  type="text"
+                  placeholder="Ex: Tertiaire / Logistique / Data..."
+                />
+              </div>
+
+              <div class="row">
+                <div class="label">Année construction</div>
+                <input id="b_year" type="number" placeholder="Ex: 2008" />
+              </div>
+              <div class="row">
+                <div class="label">Occupation (pers.)</div>
+                <input id="b_occup" type="number" placeholder="Ex: 1450" />
+              </div>
+
+              <div class="row">
+                <div class="label">Surface (m²) *</div>
+                <input id="b_surface" type="number" placeholder="Ex: 24000" />
+              </div>
+              <div class="row">
+                <div class="label">Nombre de lots</div>
+                <input id="b_lots" type="number" placeholder="Ex: 8" />
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Adresse / Localisation</h2>
+            <div class="grid2">
+              <div class="row">
+                <div class="label">Adresse *</div>
+                <input
+                  id="b_address"
+                  type="text"
+                  placeholder="Ex: 12 rue ..."
+                />
+              </div>
+              <div class="row">
+                <div class="label">Complément</div>
+                <input
+                  id="b_address2"
+                  type="text"
+                  placeholder="Bâtiment / entrée / étage..."
+                />
+              </div>
+
+              <div class="row">
+                <div class="label">Code postal *</div>
+                <input id="b_cp" type="text" placeholder="Ex: 75000" />
+              </div>
+              <div class="row">
+                <div class="label">Ville *</div>
+                <input id="b_city" type="text" placeholder="Ex: Paris" />
+              </div>
+
+              <div class="row">
+                <div class="label">Pays</div>
+                <input id="b_country" type="text" placeholder="France" />
+              </div>
+              <div class="row">
+                <div class="label">Timezone</div>
+                <input id="b_timezone" type="text" placeholder="Europe/Paris" />
+              </div>
+
+              <div class="row">
+                <div class="label">Latitude</div>
+                <input
+                  id="b_lat"
+                  type="number"
+                  step="0.000001"
+                  placeholder="Ex: 48.8566"
+                />
+              </div>
+              <div class="row">
+                <div class="label">Longitude</div>
+                <input
+                  id="b_lon"
+                  type="number"
+                  step="0.000001"
+                  placeholder="Ex: 2.3522"
+                />
+              </div>
+
+              <div class="row">
+                <div class="label">Position pin carte (x%,y%)</div>
+                <input id="b_pin" type="text" placeholder="Ex: 49,44" />
+              </div>
+              <div class="row">
+                <div class="label">Notes</div>
+                <input
+                  id="b_notes"
+                  type="text"
+                  placeholder="Infos utiles (contrat, particularités…)"
+                />
+              </div>
+            </div>
+
+            <div class="miniNote">
+              Astuce : le pin sert à placer le point sur ta carte stylisée
+              (comme dans ton dashboard).
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Énergies présentes</h2>
+
+            <!-- LIGNE CHECKBOX (inchangée + ajout fioul/solaire/ECS) -->
+            <div class="checkRow">
+              <label class="chk"
+                ><input id="e_elec" type="checkbox" /> ⚡ Électricité</label
+              >
+              <label class="chk"
+                ><input id="e_water" type="checkbox" /> 💧 Eau</label
+              >
+              <label class="chk"
+                ><input id="e_gas" type="checkbox" /> 🔥 Gaz</label
+              >
+              <label class="chk"
+                ><input id="e_heat" type="checkbox" /> ♨️ Chaleur</label
+              >
+              <label class="chk"
+                ><input id="e_cold" type="checkbox" /> ❄️ Froid</label
+              >
+              <label class="chk"
+                ><input id="e_air" type="checkbox" /> 🧪 Air comprimé</label
+              >
+              <label class="chk"
+                ><input id="e_pv" type="checkbox" /> ☀️ PV</label
+              >
+              <label class="chk"
+                ><input id="e_gen" type="checkbox" /> ⚙️ Groupe
+                électrogène</label
+              >
+
+              <!-- AJOUTS (mêmes styles, même structure) -->
+              <label class="chk"
+                ><input id="e_oil" type="checkbox" /> 🛢️ Fioul</label
+              >
+              <label class="chk"
+                ><input id="e_solar_th" type="checkbox" /> 🌞 Solaire
+                thermique</label
+              >
+              <label class="chk"
+                ><input id="e_ecs" type="checkbox" /> 🚿 ECS</label
+              >
+            </div>
+
+            <!-- DÉTAILS CHAUD / FROID / ECS (affichés seulement si cochés) -->
+            <div class="grid2" style="margin-top: 10px">
+              <div class="row" id="wrap_heat_type" style="display: none">
+                <div class="label">Type de chaleur</div>
+                <select id="e_heat_type">
+                  <option value="">— Sélectionner —</option>
+                  <option>Réseau de chaleur (livraison)</option>
+                  <option>Production sur site (chaufferie gaz)</option>
+                  <option>Production sur site (chaufferie fioul)</option>
+                  <option>Production sur site (PAC / pompe à chaleur)</option>
+                  <option>Production sur site (électrique)</option>
+                  <option>Autre</option>
+                </select>
+              </div>
+
+              <div class="row" id="wrap_cold_type" style="display: none">
+                <div class="label">Type de froid</div>
+                <select id="e_cold_type">
+                  <option value="">— Sélectionner —</option>
+                  <option>Réseau de froid (livraison)</option>
+                  <option>Production sur site (groupe froid)</option>
+                  <option>Production sur site (PAC réversible)</option>
+                  <option>Free-cooling</option>
+                  <option>Autre</option>
+                </select>
+              </div>
+
+              <div class="row" id="wrap_ecs_source" style="display: none">
+                <div class="label">Source ECS</div>
+                <select id="e_ecs_source">
+                  <option value="">— Sélectionner —</option>
+                  <option>Électricité</option>
+                  <option>Gaz</option>
+                  <option>Réseau de chaleur</option>
+                  <option>Solaire thermique</option>
+                  <option>Fioul</option>
+                  <option>Autre</option>
+                </select>
+              </div>
+
+              <div class="row" id="wrap_oil_use" style="display: none">
+                <div class="label">Usage fioul</div>
+                <select id="e_oil_use">
+                  <option value="">— Sélectionner —</option>
+                  <option>Chaufferie (chauffage)</option>
+                  <option>ECS</option>
+                  <option>Secours / groupe</option>
+                  <option>Autre</option>
+                </select>
+              </div>
+
+              <div class="row" id="wrap_solar_th_use" style="display: none">
+                <div class="label">Usage solaire thermique</div>
+                <select id="e_solar_th_use">
+                  <option value="">— Sélectionner —</option>
+                  <option>ECS</option>
+                  <option>Appoint chauffage</option>
+                  <option>Autre</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="miniNote">
+              Ces détails permettront au dashboard de construire correctement
+              “Conso primaire” (élec / eau / gaz / réseau chaleur / réseau froid
+              / fioul / solaire / ECS…).
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>DPE (optionnel)</h2>
+            <div class="grid2">
+              <div class="row">
+                <div class="label">Conso énergie (kWh/m²/an)</div>
+                <input
+                  id="dpe_energy_kwh"
+                  type="number"
+                  placeholder="Ex: 112"
+                />
+              </div>
+              <div class="row">
+                <div class="label">GES (kgCO₂/m²/an)</div>
+                <input id="dpe_ges_kg" type="number" placeholder="Ex: 18" />
+              </div>
+
+              <div class="row">
+                <div class="label">Lettre énergie</div>
+                <select id="dpe_energy_letter">
+                  <option value="">—</option>
+                  <option>A</option>
+                  <option>B</option>
+                  <option>C</option>
+                  <option>D</option>
+                  <option>E</option>
+                  <option>F</option>
+                  <option>G</option>
+                </select>
+              </div>
+              <div class="row">
+                <div class="label">Lettre GES</div>
+                <select id="dpe_ges_letter">
+                  <option value="">—</option>
+                  <option>A</option>
+                  <option>B</option>
+                  <option>C</option>
+                  <option>D</option>
+                  <option>E</option>
+                  <option>F</option>
+                  <option>G</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="miniNote">
+              Tu peux laisser vide. Le dashboard pourra ensuite estimer des
+              classes si tu mets des facteurs / consommations.
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn" id="btnSave">💾 Enregistrer</button>
+          <button class="btn alt" id="btnLoad">↩️ Recharger</button>
+          <button class="btn alt" id="btnExport">⬇️ Export JSON</button>
+          <button class="btn danger" id="btnReset">
+            🧹 Reset LocalStorage
+          </button>
+          <div class="chip" style="margin-left: auto">
+            Dernier enregistrement:
+            <b id="lastSaved" style="margin-left: 6px">—</b>
+          </div>
+        </div>
+      </section>
+
+      <!-- PREVIEW -->
+      <aside class="panel preview">
+        <div class="hdr">
+          <h1>Aperçu JSON (LocalStorage)</h1>
+          <div class="chip">
+            Clé: <b style="margin-left: 6px">ENERGISME_IDENTITY</b>
+          </div>
+        </div>
+        <div class="content">
+          <div class="card">
+            <h2>Payload</h2>
+            <textarea id="jsonPreview" readonly></textarea>
+            <div class="muted" style="margin-top: 8px">
+              Ce JSON est sauvegardé dans le navigateur (LocalStorage). Ton
+              dashboard doit lire cette clé.
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="toast" id="toast">
+      <b id="toastTitle">Info</b>
+      <span id="toastMsg">—</span>
+    </div>
+
+    <script>
+      const LS_KEY = "ENERGISME_IDENTITY";
+
+      const $ = (id) => document.getElementById(id);
+
+      function nowISO() {
+        return new Date().toISOString();
+      }
+
+      function showToast(ok, title, msg) {
+        const t = $("toast");
+        $("toastTitle").textContent = (ok ? "✅ " : "⚠️ ") + title;
+        $("toastMsg").textContent = msg;
+        t.style.borderColor = ok
+          ? "rgba(46,229,157,.28)"
+          : "rgba(255,92,122,.28)";
+        t.classList.add("show");
+        clearTimeout(showToast.__t);
+        showToast.__t = setTimeout(() => t.classList.remove("show"), 2600);
+      }
+
+      function normalizePin(pinStr) {
+        const s = (pinStr || "").trim();
+        if (!s) return null;
+        const parts = s.split(",").map((x) => Number(String(x).trim()));
+        if (parts.length !== 2) return null;
+        const xPct = Math.max(0, Math.min(100, parts[0]));
+        const yPct = Math.max(0, Math.min(100, parts[1]));
+        if (Number.isNaN(xPct) || Number.isNaN(yPct)) return null;
+        return { xPct, yPct };
+      }
+
+      // ------- NEW (sans changer le design) : affichage conditionnel des détails énergie
+      function toggleEnergyDetails() {
+        $("wrap_heat_type").style.display = $("e_heat").checked ? "" : "none";
+        $("wrap_cold_type").style.display = $("e_cold").checked ? "" : "none";
+        $("wrap_ecs_source").style.display = $("e_ecs").checked ? "" : "none";
+        $("wrap_oil_use").style.display = $("e_oil").checked ? "" : "none";
+        $("wrap_solar_th_use").style.display = $("e_solar_th").checked
+          ? ""
+          : "none";
+      }
+
+      ["e_heat", "e_cold", "e_ecs", "e_oil", "e_solar_th"].forEach((id) => {
+        $(id).addEventListener("change", toggleEnergyDetails);
+      });
+
+      function buildPayload() {
+        const pin = normalizePin($("b_pin").value);
+
+        const identite = {
+          name: $("b_name").value.trim(),
+          type: $("b_type").value.trim(),
+          year: $("b_year").value ? Number($("b_year").value) : null,
+          occup: $("b_occup").value ? Number($("b_occup").value) : null,
+          surface: $("b_surface").value ? Number($("b_surface").value) : null,
+          lots: $("b_lots").value ? Number($("b_lots").value) : null,
+
+          address: $("b_address").value.trim(),
+          address2: $("b_address2").value.trim(),
+          cp: $("b_cp").value.trim(),
+          city: $("b_city").value.trim(),
+          country: $("b_country").value.trim() || "France",
+          timezone: $("b_timezone").value.trim() || "Europe/Paris",
+
+          lat: $("b_lat").value ? Number($("b_lat").value) : null,
+          lon: $("b_lon").value ? Number($("b_lon").value) : null,
+          pin: pin,
+
+          notes: $("b_notes").value.trim() || "",
+        };
+
+        // Compat total: on garde les champs existants + on ajoute des champs
+        const energies = {
+          elec: $("e_elec").checked ? "Oui" : "Non",
+          water: $("e_water").checked ? "Oui" : "Non",
+          gas: $("e_gas").checked ? "Oui" : "Non",
+          heat: $("e_heat").checked ? "Oui" : "Non",
+          cold: $("e_cold").checked ? "Oui" : "Non",
+          air: $("e_air").checked ? "Oui" : "Non",
+          pv: $("e_pv").checked ? "Oui" : "Non",
+          gen: $("e_gen").checked ? "Oui" : "Non",
+
+          // AJOUTS
+          oil: $("e_oil").checked ? "Oui" : "Non",
+          solar_th: $("e_solar_th").checked ? "Oui" : "Non",
+          ecs: $("e_ecs").checked ? "Oui" : "Non",
+
+          // DÉTAILS (si non cochés => vide)
+          heat_type: $("e_heat").checked ? $("e_heat_type").value || "" : "",
+          cold_type: $("e_cold").checked ? $("e_cold_type").value || "" : "",
+          ecs_source: $("e_ecs").checked ? $("e_ecs_source").value || "" : "",
+          oil_use: $("e_oil").checked ? $("e_oil_use").value || "" : "",
+          solar_th_use: $("e_solar_th").checked
+            ? $("e_solar_th_use").value || ""
+            : "",
+        };
+
+        const dpe = {
+          energy_kwh_m2_an: $("dpe_energy_kwh").value
+            ? Number($("dpe_energy_kwh").value)
+            : null,
+          ges_kgco2_m2_an: $("dpe_ges_kg").value
+            ? Number($("dpe_ges_kg").value)
+            : null,
+          energy_letter: $("dpe_energy_letter").value || null,
+          ges_letter: $("dpe_ges_letter").value || null,
+        };
+
+        return { version: 1, updated_at: nowISO(), identite, energies, dpe };
+      }
+
+      function validatePayload(p) {
+        const missing = [];
+        if (!p.identite.name) missing.push("Nom du site");
+        if (!(p.identite.surface && p.identite.surface > 0))
+          missing.push("Surface");
+        if (!p.identite.address) missing.push("Adresse");
+        if (!p.identite.cp) missing.push("Code postal");
+        if (!p.identite.city) missing.push("Ville");
+        return missing;
+      }
+
+      function setStatusChip(text, ok) {
+        const el = $("statusChip");
+        el.textContent = text;
+        el.style.borderColor = ok
+          ? "rgba(46,229,157,.28)"
+          : "rgba(255,92,122,.28)";
+        el.style.background = ok
+          ? "rgba(46,229,157,.10)"
+          : "rgba(255,92,122,.10)";
+      }
+
+      function refreshPreview(p) {
+        $("jsonPreview").value = JSON.stringify(p, null, 2);
+        $("lastSaved").textContent = p.updated_at
+          ? new Date(p.updated_at).toLocaleString("fr-FR")
+          : "—";
+      }
+
+      function save() {
+        const payload = buildPayload();
+        const missing = validatePayload(payload);
+        refreshPreview(payload);
+
+        if (missing.length) {
+          setStatusChip("Champs manquants", false);
+          showToast(
+            false,
+            "Champs manquants",
+            "Merci de remplir : " + missing.join(", ")
+          );
+          return;
+        }
+        localStorage.setItem(LS_KEY, JSON.stringify(payload));
+        setStatusChip("Enregistré", true);
+        showToast(
+          true,
+          "Enregistré",
+          "✅ Données sauvegardées. Tu peux recharger le dashboard."
+        );
+      }
+
+      function load() {
+        const raw = localStorage.getItem(LS_KEY);
+        if (!raw) {
+          setStatusChip("Aucun enregistrement", false);
+          showToast(
+            false,
+            "Aucun enregistrement",
+            "Aucune identité trouvée dans LocalStorage."
+          );
+          refreshPreview(buildPayload());
+          toggleEnergyDetails();
+          return;
+        }
+        let p = null;
+        try {
+          p = JSON.parse(raw);
+        } catch (e) {
+          setStatusChip("Données invalides", false);
+          showToast(
+            false,
+            "Données invalides",
+            "Le JSON en LocalStorage est corrompu."
+          );
+          refreshPreview(buildPayload());
+          toggleEnergyDetails();
+          return;
+        }
+
+        const id = p.identite || {};
+        const e = p.energies || {};
+        const d = p.dpe || {};
+
+        $("b_name").value = id.name || "";
+        $("b_type").value = id.type || "";
+        $("b_year").value = id.year ?? "";
+        $("b_occup").value = id.occup ?? "";
+        $("b_surface").value = id.surface ?? "";
+        $("b_lots").value = id.lots ?? "";
+
+        $("b_address").value = id.address || "";
+        $("b_address2").value = id.address2 || "";
+        $("b_cp").value = id.cp || "";
+        $("b_city").value = id.city || "";
+        $("b_country").value = id.country || "France";
+        $("b_timezone").value = id.timezone || "Europe/Paris";
+
+        $("b_lat").value = (id.lat ?? "") === null ? "" : id.lat ?? "";
+        $("b_lon").value = (id.lon ?? "") === null ? "" : id.lon ?? "";
+        $("b_pin").value = id.pin ? id.pin.xPct + "," + id.pin.yPct : "";
+
+        $("b_notes").value = id.notes || "";
+
+        // champs existants
+        $("e_elec").checked = e.elec === "Oui";
+        $("e_water").checked = e.water === "Oui";
+        $("e_gas").checked = e.gas === "Oui";
+        $("e_heat").checked = e.heat === "Oui";
+        $("e_cold").checked = e.cold === "Oui";
+        $("e_air").checked = e.air === "Oui";
+        $("e_pv").checked = e.pv === "Oui";
+        $("e_gen").checked = e.gen === "Oui";
+
+        // nouveaux champs (compat)
+        $("e_oil").checked = e.oil === "Oui";
+        $("e_solar_th").checked = e.solar_th === "Oui";
+        $("e_ecs").checked = e.ecs === "Oui";
+
+        $("e_heat_type").value = e.heat_type || "";
+        $("e_cold_type").value = e.cold_type || "";
+        $("e_ecs_source").value = e.ecs_source || "";
+        $("e_oil_use").value = e.oil_use || "";
+        $("e_solar_th_use").value = e.solar_th_use || "";
+
+        $("dpe_energy_kwh").value = d.energy_kwh_m2_an ?? "";
+        $("dpe_ges_kg").value = d.ges_kgco2_m2_an ?? "";
+        $("dpe_energy_letter").value = d.energy_letter ?? "";
+        $("dpe_ges_letter").value = d.ges_letter ?? "";
+
+        toggleEnergyDetails();
+
+        setStatusChip("Chargé", true);
+        showToast(true, "Chargé", "✅ Données appliquées au formulaire.");
+        refreshPreview(p);
+      }
+
+      function resetAll() {
+        if (
+          !confirm(
+            "Réinitialiser ? Cela efface uniquement l'identité du bâtiment (LocalStorage)."
+          )
+        )
+          return;
+        localStorage.removeItem(LS_KEY);
+        location.reload();
+      }
+
+      function exportJSON() {
+        const payload = buildPayload();
+        const blob = new Blob([JSON.stringify(payload, null, 2)], {
+          type: "application/json",
+        });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "ENERGISME_IDENTITY.json";
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+        showToast(true, "Exporté", "JSON téléchargé : ENERGISME_IDENTITY.json");
+      }
+
+      $("btnSave").addEventListener("click", save);
+      $("btnLoad").addEventListener("click", load);
+      $("btnReset").addEventListener("click", resetAll);
+      $("btnExport").addEventListener("click", exportJSON);
+
+      // Init
+      refreshPreview(buildPayload());
+      toggleEnergyDetails();
+    </script>
+  </body>
+</html>
