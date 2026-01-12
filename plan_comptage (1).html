@@ -1,0 +1,3264 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Synoptique Comptage – Dashboard (Multi plans)</title>
+
+    <!-- XLSX (import Excel .xlsx) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <style>
+      :root {
+        --bg1: #020617;
+        --bg2: #000;
+        --cyan: #00d4ff;
+        --cyan2: #00aaff;
+        --text: #c8eaff;
+        --muted: #9ca3af;
+        --panel: rgba(0, 120, 200, 0.1);
+        --border: rgba(0, 170, 255, 0.35);
+        --shadow: 0 0 14px rgba(0, 180, 255, 0.18);
+        --radius: 16px;
+
+        /* Taille des compteurs (sliders) */
+        --nodeW: 170px;
+        --nodeH: 96px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: radial-gradient(circle at top, var(--bg1), var(--bg2));
+        color: var(--text);
+      }
+
+      header {
+        padding: 14px 14px 10px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(0, 120, 200, 0.08);
+        position: sticky;
+        top: 0;
+        backdrop-filter: blur(6px);
+        z-index: 50;
+      }
+
+      .topRow {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+      h1 {
+        margin: 0;
+        color: var(--cyan);
+        text-shadow: 0 0 12px #00cfff;
+        font-size: 16px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .tab {
+        border: 1px solid var(--border);
+        background: rgba(0, 120, 255, 0.14);
+        color: var(--text);
+        padding: 8px 10px;
+        border-radius: 999px;
+        font-size: 13px;
+        cursor: pointer;
+        user-select: none;
+        transition: 0.15s;
+        white-space: nowrap;
+      }
+      .tab.active {
+        background: rgba(0, 200, 255, 0.22);
+        box-shadow: var(--shadow);
+        border-color: rgba(0, 220, 255, 0.55);
+      }
+      .tab:hover {
+        transform: translateY(-1px);
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 360px 1fr;
+        gap: 12px;
+        padding: 12px;
+      }
+      @media (max-width: 1020px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .panel {
+        border: 1px solid var(--border);
+        background: var(--panel);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+      .panelHeader {
+        padding: 12px 12px 10px;
+        border-bottom: 1px solid rgba(0, 170, 255, 0.18);
+        background: rgba(0, 120, 200, 0.08);
+      }
+      .panelHeader h2 {
+        margin: 0;
+        font-size: 14px;
+        color: #bde8ff;
+      }
+      .panelBody {
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .btnRow {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .btn {
+        border: 1px solid var(--cyan2);
+        background: rgba(0, 120, 255, 0.22);
+        color: var(--text);
+        padding: 10px 12px;
+        border-radius: 14px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: 0.15s;
+        user-select: none;
+        white-space: nowrap;
+      }
+      .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow);
+      }
+      .btn.ghost {
+        background: rgba(0, 120, 255, 0.1);
+        border-color: rgba(0, 170, 255, 0.35);
+      }
+      .btn.danger {
+        border-color: rgba(255, 90, 90, 0.75);
+        background: rgba(255, 90, 90, 0.12);
+      }
+      .btn.good {
+        border-color: rgba(90, 255, 180, 0.55);
+        background: rgba(90, 255, 180, 0.1);
+      }
+
+      .small {
+        font-size: 12px;
+        color: var(--muted);
+        line-height: 1.3;
+      }
+      label {
+        font-size: 12px;
+        color: #bde8ff;
+        margin-bottom: 4px;
+        display: block;
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        border: 1px solid rgba(0, 170, 255, 0.3);
+        background: rgba(2, 6, 23, 0.55);
+        color: var(--text);
+        padding: 10px 10px;
+        border-radius: 12px;
+        outline: none;
+        font-size: 14px;
+      }
+      textarea {
+        min-height: 90px;
+        resize: vertical;
+      }
+
+      .twoCols {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      @media (max-width: 420px) {
+        .twoCols {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .hr {
+        height: 1px;
+        background: rgba(0, 170, 255, 0.18);
+        margin: 4px 0;
+      }
+      .fileRow {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .canvasWrap {
+        border: 1px solid var(--border);
+        background: rgba(0, 120, 200, 0.06);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        position: relative;
+        min-height: 70vh;
+      }
+      .canvasToolbar {
+        padding: 10px;
+        border-bottom: 1px solid rgba(0, 170, 255, 0.18);
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        background: rgba(0, 120, 200, 0.08);
+      }
+      .toolbarLeft,
+      .toolbarRight {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .chip {
+        border: 1px solid rgba(0, 170, 255, 0.3);
+        background: rgba(0, 120, 255, 0.14);
+        padding: 8px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        color: #bde8ff;
+        user-select: none;
+      }
+      .zoom {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        min-width: 210px;
+      }
+
+      .canvas {
+        position: relative;
+        width: 100%;
+        height: calc(70vh - 52px);
+        min-height: 520px;
+        overflow: auto;
+        transform-origin: 0 0;
+        background: radial-gradient(
+            circle at 12px 12px,
+            rgba(0, 200, 255, 0.12) 1px,
+            transparent 1px
+          ),
+          radial-gradient(
+            circle at 12px 12px,
+            rgba(0, 200, 255, 0.07) 1px,
+            transparent 1px
+          );
+        background-size: 24px 24px;
+      }
+
+      .linksSvg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4000px;
+        height: 3000px;
+        pointer-events: none;
+        overflow: visible;
+      }
+
+      .node {
+        position: absolute;
+        width: var(--nodeW);
+        min-height: var(--nodeH);
+        border-radius: 16px;
+        border: 1px solid rgba(0, 170, 255, 0.38);
+        background: rgba(0, 120, 255, 0.16);
+        box-shadow: 0 0 14px rgba(0, 180, 255, 0.15);
+        padding: 10px;
+        cursor: default;
+        user-select: none;
+      }
+      .node.selected {
+        border-color: rgba(0, 220, 255, 0.7);
+        box-shadow: 0 0 18px rgba(0, 220, 255, 0.22);
+        outline: 1px solid rgba(0, 220, 255, 0.25);
+      }
+
+      .node .addChildBtn {
+        position: absolute;
+        right: -6px;
+        bottom: -6px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: rgba(0, 200, 255, 0.85);
+        color: #001018;
+        font-weight: bold;
+        font-size: 16px;
+        line-height: 22px;
+        text-align: center;
+        cursor: pointer;
+        box-shadow: 0 0 8px rgba(0, 220, 255, 0.8);
+      }
+      .node .addChildBtn:hover {
+        transform: scale(1.15);
+        background: rgba(0, 230, 255, 1);
+      }
+
+      .node .sumBtn {
+        position: absolute;
+        right: 22px;
+        bottom: -6px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: rgba(90, 255, 180, 0.9);
+        color: #002018;
+        font-weight: bold;
+        font-size: 14px;
+        line-height: 22px;
+        text-align: center;
+        cursor: pointer;
+        box-shadow: 0 0 8px rgba(90, 255, 180, 0.8);
+      }
+      .node .sumBtn:hover {
+        transform: scale(1.15);
+      }
+
+      .node.symbol {
+        width: 48px;
+        height: 72px;
+        min-height: auto;
+        padding: 0;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        position: absolute;
+      }
+      .node.symbol .meterWrap {
+        padding: 0;
+      }
+      .node.symbol .meterSvg {
+        width: 42px;
+        height: 56px;
+        stroke-width: 6;
+      }
+      .node.symbol.selected .meterSvg {
+        filter: drop-shadow(0 0 12px #00d4ff);
+        transform: scale(1.15);
+      }
+
+      .meterWrap {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+      .meterIcon {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+      }
+      .meterSvg {
+        width: 48px;
+        height: 64px;
+        stroke: #00d4ff;
+        stroke-width: 6;
+        fill: none;
+        transition: transform 0.2s, filter 0.2s;
+      }
+      .node:hover .meterSvg {
+        transform: scale(1.1);
+        filter: drop-shadow(0 0 10px #00d4ff);
+      }
+
+      .meterDetails {
+        position: absolute;
+        inset: 0;
+        background: rgba(2, 6, 23, 0.95);
+        border-radius: 14px;
+        padding: 10px;
+        font-size: 11px;
+        color: #c8eaff;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.15s;
+      }
+      .node:hover .meterDetails {
+        opacity: 1;
+      }
+
+      .formula {
+        font-size: 11px;
+        opacity: 0.75;
+        margin-bottom: 4px;
+        color: #9cffc4;
+      }
+
+      .status {
+        border: 1px solid rgba(0, 170, 255, 0.25);
+        background: rgba(0, 120, 255, 0.1);
+        padding: 10px 12px;
+        border-radius: 14px;
+        font-size: 12px;
+        color: #bde8ff;
+        line-height: 1.25;
+      }
+
+      .kbd {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", monospace;
+        font-size: 11px;
+        border: 1px solid rgba(0, 170, 255, 0.22);
+        background: rgba(2, 6, 23, 0.6);
+        padding: 2px 6px;
+        border-radius: 8px;
+        color: #dbeafe;
+      }
+
+      .sizeRow {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 10px;
+        border: 1px solid rgba(0, 170, 255, 0.18);
+        background: rgba(0, 120, 255, 0.08);
+        border-radius: 14px;
+      }
+      .sizeLine {
+        display: grid;
+        grid-template-columns: 90px 1fr 56px;
+        gap: 10px;
+        align-items: center;
+      }
+      .sizeVal {
+        text-align: right;
+        font-size: 12px;
+        color: #bde8ff;
+      }
+
+      .importPanel {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 320px;
+        max-height: 70vh;
+        background: rgba(2, 6, 23, 0.95);
+        border: 1px solid rgba(0, 170, 255, 0.35);
+        border-radius: 14px;
+        box-shadow: 0 0 18px rgba(0, 180, 255, 0.25);
+        z-index: 20;
+        display: none;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .importHeader {
+        padding: 10px;
+        font-size: 13px;
+        font-weight: bold;
+        color: #bde8ff;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(0, 170, 255, 0.2);
+      }
+      .importCount {
+        font-size: 12px;
+        opacity: 0.7;
+      }
+      .importSearch {
+        display: grid;
+        grid-template-columns: 22px 1fr;
+        align-items: center;
+        gap: 8px;
+        padding: 10px;
+        border-bottom: 1px solid rgba(0, 170, 255, 0.2);
+      }
+      .importSearch .loupe {
+        width: 22px;
+        height: 22px;
+        display: grid;
+        place-items: center;
+        border: 1px solid rgba(0, 170, 255, 0.28);
+        border-radius: 10px;
+        background: rgba(0, 120, 255, 0.1);
+        color: #bde8ff;
+        user-select: none;
+      }
+      .importSearch input {
+        border: 1px solid rgba(0, 170, 255, 0.22);
+        background: rgba(2, 6, 23, 0.35);
+        color: #c8eaff;
+        padding: 10px 10px;
+        border-radius: 12px;
+      }
+      .importPick {
+        padding: 10px;
+        border-bottom: 1px solid rgba(0, 170, 255, 0.2);
+        display: grid;
+        gap: 10px;
+      }
+      .importPickRow {
+        display: grid;
+        grid-template-columns: 1fr 120px;
+        gap: 10px;
+        align-items: center;
+      }
+      .importPick select {
+        width: 100%;
+        border: 1px solid rgba(0, 170, 255, 0.22);
+        background: rgba(2, 6, 23, 0.35);
+        color: #c8eaff;
+        padding: 10px 10px;
+        border-radius: 12px;
+      }
+      .importMainBtn {
+        border: 1px solid rgba(0, 220, 255, 0.6);
+        background: rgba(0, 170, 255, 0.18);
+        color: #bde8ff;
+        font-size: 13px;
+        padding: 10px 10px;
+        border-radius: 12px;
+        cursor: pointer;
+      }
+      .importMainBtn:hover {
+        background: rgba(0, 220, 255, 0.3);
+        box-shadow: 0 0 10px rgba(0, 220, 255, 0.35);
+        transform: translateY(-1px);
+      }
+      .importList {
+        overflow-y: auto;
+        max-height: 42vh;
+      }
+      .importItem {
+        padding: 10px 10px;
+        cursor: pointer;
+        border-bottom: 1px solid rgba(0, 170, 255, 0.12);
+        transition: background 0.15s;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+      }
+      .importItem:hover {
+        background: rgba(0, 170, 255, 0.12);
+      }
+      .importItem .left {
+        min-width: 0;
+      }
+      .importItem .name {
+        font-size: 13px;
+        color: #e6f7ff;
+      }
+      .importItem .meta {
+        font-size: 11px;
+        color: #9ca3af;
+      }
+
+      .importGenBtn {
+        border: 1px solid rgba(0, 220, 255, 0.6);
+        background: rgba(0, 170, 255, 0.18);
+        color: #bde8ff;
+        font-size: 11px;
+        padding: 6px 10px;
+        border-radius: 12px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .importGenBtn:hover {
+        background: rgba(0, 220, 255, 0.32);
+        box-shadow: 0 0 8px rgba(0, 220, 255, 0.35);
+      }
+
+      .importFooter {
+        padding: 10px;
+        border-top: 1px solid rgba(0, 170, 255, 0.2);
+        display: flex;
+        gap: 10px;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .importCloseBtn {
+        border: 1px solid rgba(255, 90, 90, 0.75);
+        background: rgba(255, 90, 90, 0.1);
+        color: #ffd0d0;
+        font-size: 12px;
+        padding: 8px 10px;
+        border-radius: 12px;
+        cursor: pointer;
+      }
+      .importCloseBtn:hover {
+        background: rgba(255, 90, 90, 0.18);
+        transform: translateY(-1px);
+      }
+
+      .childPicker {
+        position: absolute;
+        left: calc(100% + 8px);
+        top: 0;
+        width: 220px;
+        background: rgba(2, 6, 23, 0.96);
+        border: 1px solid rgba(0, 200, 255, 0.35);
+        border-radius: 12px;
+        box-shadow: 0 0 14px rgba(0, 200, 255, 0.25);
+        padding: 8px;
+        z-index: 200;
+      }
+      .childPicker.hidden {
+        display: none;
+      }
+      .childPicker input {
+        width: 100%;
+        font-size: 12px;
+        padding: 6px 8px;
+        border-radius: 8px;
+        border: 1px solid rgba(0, 200, 255, 0.25);
+        background: rgba(2, 6, 23, 0.6);
+        color: #c8eaff;
+        margin-bottom: 6px;
+      }
+      .childList {
+        max-height: 160px;
+        overflow-y: auto;
+      }
+      .childItem {
+        padding: 6px 8px;
+        font-size: 12px;
+        cursor: pointer;
+        border-radius: 8px;
+      }
+      .childItem:hover {
+        background: rgba(0, 200, 255, 0.18);
+      }
+
+      .editTitleBtn {
+        border: 1px solid rgba(0, 220, 255, 0.45);
+        background: rgba(0, 120, 255, 0.12);
+        color: #bde8ff;
+        font-size: 12px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        cursor: pointer;
+      }
+      .editTitleBtn:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow);
+      }
+      .planBadge {
+        border: 1px solid rgba(0, 220, 255, 0.35);
+        background: rgba(0, 200, 255, 0.1);
+        color: #bde8ff;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+
+      .optRow {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+        padding: 10px;
+        border: 1px solid rgba(0, 170, 255, 0.18);
+        background: rgba(0, 120, 255, 0.06);
+        border-radius: 14px;
+      }
+      .optLine {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .radio {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        user-select: none;
+      }
+      .radio input {
+        width: auto;
+      }
+
+      .list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .item {
+        padding: 10px 10px;
+        border: 1px solid rgba(0, 170, 255, 0.22);
+        border-radius: 12px;
+        background: rgba(0, 120, 255, 0.1);
+        cursor: pointer;
+      }
+      .item:hover {
+        background: rgba(0, 170, 255, 0.14);
+      }
+      .item.active {
+        background: rgba(0, 200, 255, 0.22);
+        border-color: rgba(0, 220, 255, 0.55);
+        box-shadow: var(--shadow);
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <div class="topRow">
+        <div
+          style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap"
+        >
+          <h1>
+            <span id="planTitle">Synoptique de Comptage</span>
+            <button class="editTitleBtn" id="btnRenamePlan">✏️ Renommer</button>
+            <span class="planBadge" id="planKindBadge">—</span>
+          </h1>
+
+          <div class="tabs" id="viewTabs">
+            <div class="tab active" id="tabViewSyn">📊 Synoptique</div>
+            <div class="tab" id="tabViewBat">🏢 Bâtiments</div>
+          </div>
+
+          <div class="tabs" id="planTabs"></div>
+          <div class="tabs" id="typeTabs"></div>
+        </div>
+
+        <div
+          style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap"
+        >
+          <span class="chip" id="chipCounts">0 compteurs • 0 liens</span>
+          <span class="chip" id="chipMode">Mode : Sélection</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ✅ VUE BÂTIMENTS -->
+    <div id="viewBuildings" style="display: none">
+      <header
+        style="
+          padding: 14px 18px;
+          border-bottom: 1px solid var(--border);
+          background: rgba(0, 120, 200, 0.08);
+          position: sticky;
+          top: 0;
+          z-index: 40;
+        "
+      >
+        <h1 style="margin: 0; color: var(--cyan); font-size: 16px">
+          🏢 BÂTIMENTS / LOCATAIRES
+          <button
+            class="btn good"
+            style="margin-left: 12px"
+            id="btnSaveBuildingsView"
+          >
+            💾 Enregistrer
+          </button>
+        </h1>
+      </header>
+
+      <div class="layout">
+        <div class="panel">
+          <div class="panelHeader"><h2>Bâtiments</h2></div>
+          <div class="panelBody">
+            <div class="list buildingsList" id="buildingsList"></div>
+            <div class="btnRow">
+              <button class="btn" id="btnAddBuilding">➕ Ajouter</button>
+              <button class="btn danger" id="btnRemoveBuilding">
+                ❌ Supprimer
+              </button>
+            </div>
+            <div class="small">
+              Ici, un bâtiment = un <b>Plan kind=building</b>.
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panelHeader"><h2>Locataires</h2></div>
+          <div class="panelBody">
+            <div class="list tenantsList" id="tenantsList"></div>
+            <div class="btnRow">
+              <button class="btn" id="btnAddTenant">➕ Ajouter</button>
+              <button class="btn danger" id="btnRemoveTenant">
+                ❌ Supprimer
+              </button>
+            </div>
+            <div class="small">
+              Un locataire = un <b>Plan kind=tenant</b> lié au bâtiment
+              sélectionné.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ✅ VUE SYNOPTIQUE -->
+    <div id="viewSynoptique">
+      <div class="layout">
+        <!-- PANEL GAUCHE -->
+        <div class="panel">
+          <div class="panelHeader">
+            <h2>Éditeur compteur (création / modification)</h2>
+          </div>
+
+          <div class="panelBody">
+            <div class="status" id="statusBox">
+              <div><b>Instructions rapides</b></div>
+              <div class="small" style="margin-top: 6px">
+                • Les compteurs sont <b>fixes</b> : positions gérées par
+                l’auto-layout.<br />
+                • Pour faire un lien : clique <b>Créer un lien</b>, puis clique
+                <b>Parent</b> → <b>Enfant</b>.<br />
+                • <span class="kbd">Suppr</span> supprime le compteur
+                sélectionné.<br />
+                • Import : CSV (| ; ,) ou XLSX (1ère feuille).<br />
+                • Excel : colonne <b>Date</b> supportée (Date / date / Jour /
+                datetime).<br />
+                • ✅ Après import : le synoptique se génère automatiquement pour
+                tous les enfants dont le parent existe.
+              </div>
+            </div>
+
+            <div class="btnRow">
+              <button class="btn good" id="btnNew">+ Créer compteur</button>
+              <button class="btn" id="btnLinkMode">Créer un lien</button>
+              <button class="btn ghost" id="btnRecalc">Recalcul</button>
+            </div>
+
+            <div class="optRow">
+              <div class="small"><b>Options d’organisation</b></div>
+              <div class="optLine">
+                <div class="radio">
+                  <input type="checkbox" id="chkAutoLayout" checked />
+                  <label for="chkAutoLayout" style="margin: 0"
+                    >Auto-layout à chaque action</label
+                  >
+                </div>
+              </div>
+              <div class="optLine">
+                <div class="radio">
+                  <input type="checkbox" id="chkAutoParent" />
+                  <label for="chkAutoParent" style="margin: 0"
+                    >Déduire le parent automatiquement (si vide →
+                    “Général”)</label
+                  >
+                </div>
+              </div>
+              <div class="small">
+                X verrouillé par niveau : C à gauche, SC au milieu, SSC à
+                droite.
+              </div>
+            </div>
+
+            <div class="hr"></div>
+
+            <div class="twoCols">
+              <div>
+                <label>ID (unique)</label>
+                <input id="f_id" placeholder="Ex: EF-001" />
+              </div>
+              <div>
+                <label>Site</label>
+                <input id="f_site" placeholder="Ex: ASKIA" />
+              </div>
+            </div>
+
+            <div>
+              <label>Nom</label>
+              <input id="f_nom" placeholder="Ex: Général Eau froide" />
+            </div>
+
+            <div class="twoCols">
+              <div>
+                <label>Étage</label>
+                <input id="f_etage" placeholder="Ex: RDC / R+2 / S1" />
+              </div>
+              <div>
+                <label>Type énergie</label>
+                <select id="f_type">
+                  <option value="elec">Électricité</option>
+                  <option value="eau">Eau</option>
+                  <option value="gaz">Gaz</option>
+                  <option value="chaud">Énergie chaud</option>
+                  <option value="froid">Énergie froid</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="twoCols">
+              <div>
+                <label>Date (optionnel)</label>
+                <input id="f_date" type="date" />
+                <div class="small">
+                  Excel peut donner 2025-12-29 ou 29/12/2025, c’est accepté.
+                </div>
+              </div>
+              <div>
+                <label>Parent (ID)</label>
+                <input id="f_parent" placeholder="Ex: EF-047 (optionnel)" />
+                <div class="small">
+                  Si tu mets Parent puis “Appliquer”, le lien parent→enfant est
+                  créé/ajusté.
+                </div>
+              </div>
+            </div>
+
+            <div class="twoCols">
+              <div>
+                <label>Index</label>
+                <input
+                  id="f_index"
+                  placeholder="Ex: 12345.6"
+                  inputmode="decimal"
+                />
+              </div>
+              <div>
+                <label>Unité</label>
+                <input id="f_unite" placeholder="Ex: kWh / m³ / Nm³" />
+              </div>
+            </div>
+
+            <div id="tenantAssignBlock" style="display: none">
+              <label>Affectation locataire (optionnel)</label>
+              <select id="f_tenantAssign">
+                <option value="">— Aucun —</option>
+              </select>
+              <div class="small">
+                (Visible seulement si le plan courant est un
+                <b>bâtiment</b> avec des locataires.)
+              </div>
+            </div>
+
+            <div class="btnRow">
+              <button class="btn good" id="btnApply">Appliquer</button>
+              <button class="btn danger" id="btnDelete">Supprimer</button>
+              <button class="btn ghost" id="btnClearSel">Désélectionner</button>
+            </div>
+
+            <div class="hr"></div>
+
+            <div
+              class="panelHeader"
+              style="
+                margin: 0 -12px;
+                border-top: 1px solid rgba(0, 170, 255, 0.18);
+              "
+            >
+              <h2>Import / Export</h2>
+            </div>
+
+            <div class="fileRow">
+              <input
+                type="file"
+                id="fileCsv"
+                accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              />
+              <div class="btnRow">
+                <button class="btn ghost" id="btnTemplateCsv">
+                  Télécharger modèle CSV
+                </button>
+                <!-- ✅ BOUTON demandé : ouvrir/fermer le listing import -->
+                <button class="btn" id="btnToggleImportPanel">
+                  📦 Listing import
+                </button>
+              </div>
+            </div>
+
+            <div class="btnRow">
+              <button class="btn" id="btnExportJson">Export JSON</button>
+              <button class="btn" id="btnImportJsonBtn">Import JSON</button>
+              <input
+                type="file"
+                id="fileJson"
+                accept=".json,application/json"
+                style="display: none"
+              />
+            </div>
+
+            <div class="btnRow">
+              <button class="btn good" id="btnValidatePlan">
+                ✅ Valider le plan de comptage
+              </button>
+            </div>
+
+            <div class="btnRow">
+              <button class="btn ghost" id="btnSaveLocal">
+                Sauvegarder (Local)
+              </button>
+              <button class="btn ghost" id="btnLoadLocal">
+                Charger (Local)
+              </button>
+              <button class="btn danger" id="btnResetAll">Reset</button>
+            </div>
+
+            <div class="hr"></div>
+
+            <div
+              class="panelHeader"
+              style="
+                margin: 0 -12px;
+                border-top: 1px solid rgba(0, 170, 255, 0.18);
+              "
+            >
+              <h2>Taille des compteurs</h2>
+            </div>
+
+            <div class="sizeRow">
+              <div class="sizeLine">
+                <div class="small">Largeur</div>
+                <input
+                  type="range"
+                  id="nodeWidthRange"
+                  min="120"
+                  max="380"
+                  value="170"
+                />
+                <div class="sizeVal">
+                  <span id="nodeWidthLabel">170</span>px
+                </div>
+              </div>
+              <div class="sizeLine">
+                <div class="small">Hauteur</div>
+                <input
+                  type="range"
+                  id="nodeHeightRange"
+                  min="70"
+                  max="220"
+                  value="96"
+                />
+                <div class="sizeVal">
+                  <span id="nodeHeightLabel">96</span>px
+                </div>
+              </div>
+              <div class="small">
+                Change CSS vars <span class="kbd">--nodeW</span>/<span
+                  class="kbd"
+                  >--nodeH</span
+                >
+                puis rerender.
+              </div>
+            </div>
+
+            <div class="small">
+              Colonnes attendues (CSV/XLSX) :
+              <b
+                >ID | Site | Nom | Etage | parent | index | unité | type |
+                date</b
+              ><br />
+              XLSX : 1ère feuille.
+            </div>
+          </div>
+        </div>
+
+        <!-- CANVAS -->
+        <div class="canvasWrap">
+          <div class="canvasToolbar">
+            <div class="toolbarLeft">
+              <span class="chip" id="chipFilter">Filtre : —</span>
+              <span class="chip" id="chipHelp"
+                >Raccourcis : <span class="kbd">Suppr</span> supprimer •
+                <span class="kbd">Esc</span> annuler lien</span
+              >
+              <button class="btn ghost" id="btnNewTenantPlan">
+                + Locataire
+              </button>
+              <button class="btn ghost" id="btnNewBuildingPlan">
+                + Bâtiment
+              </button>
+              <!-- ✅ bouton en haut aussi (pratique mobile) -->
+              <button class="btn" id="btnToggleImportPanelTop">
+                📦 Import
+              </button>
+            </div>
+
+            <div class="toolbarRight">
+              <div class="zoom">
+                <span class="small">Zoom</span>
+                <input
+                  type="range"
+                  id="zoomRange"
+                  min="50"
+                  max="160"
+                  value="100"
+                />
+                <span class="chip" id="zoomLabel">100%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Import Listing -->
+          <div class="importPanel" id="importPanel">
+            <div class="importHeader">
+              <span>Compteurs importés</span>
+              <span class="importCount" id="importCount">0</span>
+            </div>
+
+            <div class="importSearch">
+              <div class="loupe">🔍</div>
+              <input
+                type="text"
+                id="importSearch"
+                placeholder="Rechercher (ID / Nom / Site)..."
+              />
+            </div>
+
+            <div class="importPick">
+              <div class="small">
+                Choisis un compteur puis clique <b>Générer</b>.
+              </div>
+              <div class="importPickRow">
+                <select id="importSelect">
+                  <option value="">— Sélectionner un compteur —</option>
+                </select>
+                <button class="importMainBtn" id="btnGenerateSelected">
+                  ➕ Générer
+                </button>
+              </div>
+            </div>
+
+            <div class="importList" id="importList"></div>
+
+            <div class="importFooter">
+              <p class="small" style="margin: 0">
+                Astuce : tu peux générer via le bouton “➕ Générer” dans la
+                liste.
+              </p>
+              <button class="importCloseBtn" id="btnCloseImport">Fermer</button>
+            </div>
+          </div>
+
+          <div class="canvas" id="canvas">
+            <svg class="linksSvg" id="linksSvg"></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (() => {
+        function ensureXlsx() {
+          if (typeof XLSX === "undefined") {
+            alert(
+              "Lib XLSX non chargée. Vérifie ta connexion ou le script CDN."
+            );
+            return false;
+          }
+          return true;
+        }
+
+        const PLANS_LS_KEY = "energisme_synoptique_plans_v1";
+        const ACTIVE_PLAN_KEY = "energisme_synoptique_active_plan_v1";
+
+        function nowIso() {
+          return new Date().toISOString();
+        }
+        function uid(prefix = "P") {
+          return (
+            prefix +
+            "-" +
+            Math.random().toString(16).slice(2, 9) +
+            "-" +
+            Date.now().toString(16).slice(-5)
+          );
+        }
+        function loadPlansStore() {
+          try {
+            const raw = localStorage.getItem(PLANS_LS_KEY);
+            const obj = raw ? JSON.parse(raw) : null;
+            if (obj && Array.isArray(obj.plans)) return obj;
+          } catch {}
+          return { version: 1, updatedAt: nowIso(), plans: [] };
+        }
+        function savePlansStore(store) {
+          store.updatedAt = nowIso();
+          localStorage.setItem(PLANS_LS_KEY, JSON.stringify(store));
+        }
+        function getActivePlanId() {
+          return localStorage.getItem(ACTIVE_PLAN_KEY) || "";
+        }
+        function setActivePlanId(id) {
+          localStorage.setItem(ACTIVE_PLAN_KEY, id);
+        }
+        function planKindLabel(kind) {
+          if (kind === "building") return "Bâtiment";
+          if (kind === "tenant") return "Locataire";
+          return "Plan";
+        }
+
+        let importBuffer = [];
+
+        // ❌ "Tous" supprimé comme demandé
+        const TYPES = [
+          { key: "elec", label: "Élec" },
+          { key: "eau", label: "Eau" },
+          { key: "gaz", label: "Gaz" },
+          { key: "chaud", label: "Chaud" },
+          { key: "froid", label: "Froid" },
+        ];
+        const typeLabels = {
+          elec: "Électricité",
+          eau: "Eau",
+          gaz: "Gaz",
+          chaud: "Énergie chaud",
+          froid: "Énergie froid",
+        };
+
+        const canvas = document.getElementById("canvas");
+        const linksSvg = document.getElementById("linksSvg");
+
+        const chipCounts = document.getElementById("chipCounts");
+        const chipMode = document.getElementById("chipMode");
+        const chipFilter = document.getElementById("chipFilter");
+
+        const zoomRange = document.getElementById("zoomRange");
+        const zoomLabel = document.getElementById("zoomLabel");
+
+        const planTitle = document.getElementById("planTitle");
+        const btnRenamePlan = document.getElementById("btnRenamePlan");
+        const planKindBadge = document.getElementById("planKindBadge");
+        const planTabs = document.getElementById("planTabs");
+
+        const f_id = document.getElementById("f_id");
+        const f_site = document.getElementById("f_site");
+        const f_nom = document.getElementById("f_nom");
+        const f_etage = document.getElementById("f_etage");
+        const f_parent = document.getElementById("f_parent");
+        const f_index = document.getElementById("f_index");
+        const f_unite = document.getElementById("f_unite");
+        const f_type = document.getElementById("f_type");
+        const f_date = document.getElementById("f_date");
+
+        const tenantAssignBlock = document.getElementById("tenantAssignBlock");
+        const f_tenantAssign = document.getElementById("f_tenantAssign");
+
+        const btnNew = document.getElementById("btnNew");
+        const btnApply = document.getElementById("btnApply");
+        const btnDelete = document.getElementById("btnDelete");
+        const btnClearSel = document.getElementById("btnClearSel");
+        const btnLinkMode = document.getElementById("btnLinkMode");
+        const btnRecalc = document.getElementById("btnRecalc");
+
+        const fileCsv = document.getElementById("fileCsv");
+        const btnTemplateCsv = document.getElementById("btnTemplateCsv");
+
+        const btnExportJson = document.getElementById("btnExportJson");
+        const btnImportJsonBtn = document.getElementById("btnImportJsonBtn");
+        const fileJson = document.getElementById("fileJson");
+
+        const btnSaveLocal = document.getElementById("btnSaveLocal");
+        const btnLoadLocal = document.getElementById("btnLoadLocal");
+        const btnResetAll = document.getElementById("btnResetAll");
+
+        const nodeWidthRange = document.getElementById("nodeWidthRange");
+        const nodeHeightRange = document.getElementById("nodeHeightRange");
+        const nodeWidthLabel = document.getElementById("nodeWidthLabel");
+        const nodeHeightLabel = document.getElementById("nodeHeightLabel");
+
+        const importPanel = document.getElementById("importPanel");
+        const importList = document.getElementById("importList");
+        const importSearch = document.getElementById("importSearch");
+        const importCount = document.getElementById("importCount");
+        const importSelect = document.getElementById("importSelect");
+        const btnGenerateSelected = document.getElementById(
+          "btnGenerateSelected"
+        );
+        const btnCloseImport = document.getElementById("btnCloseImport");
+
+        const btnNewTenantPlan = document.getElementById("btnNewTenantPlan");
+        const btnNewBuildingPlan =
+          document.getElementById("btnNewBuildingPlan");
+
+        const chkAutoLayout = document.getElementById("chkAutoLayout");
+        const chkAutoParent = document.getElementById("chkAutoParent");
+
+        const btnToggleImportPanel = document.getElementById(
+          "btnToggleImportPanel"
+        );
+        const btnToggleImportPanelTop = document.getElementById(
+          "btnToggleImportPanelTop"
+        );
+
+        // Vues
+        const viewSynoptique = document.getElementById("viewSynoptique");
+        const viewBuildings = document.getElementById("viewBuildings");
+        const tabViewSyn = document.getElementById("tabViewSyn");
+        const tabViewBat = document.getElementById("tabViewBat");
+
+        // Buildings view DOM
+        const buildingsList = document.getElementById("buildingsList");
+        const tenantsList = document.getElementById("tenantsList");
+        const btnSaveBuildingsView = document.getElementById(
+          "btnSaveBuildingsView"
+        );
+        const btnAddBuilding = document.getElementById("btnAddBuilding");
+        const btnRemoveBuilding = document.getElementById("btnRemoveBuilding");
+        const btnAddTenant = document.getElementById("btnAddTenant");
+        const btnRemoveTenant = document.getElementById("btnRemoveTenant");
+
+        const state = {
+          nodes: new Map(),
+          links: [],
+          selectedId: null,
+          mode: "select",
+          linkStep: { from: null },
+          filterType: "eau", // ✅ défaut eau pour que tu vois direct sur ton fichier eau
+          zoom: 1,
+          tenantMap: {},
+        };
+
+        let DISPLAY_MODE = "symbol";
+
+        const GRID_SIZE = 24;
+        function snapToGrid(v) {
+          return Math.round(v / GRID_SIZE) * GRID_SIZE;
+        }
+        const COL_X0 = 60;
+        const COL_GAP = 220;
+
+        function escapeHtml(s) {
+          return String(s ?? "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+        }
+        function normalizeHeader(h) {
+          return (h || "")
+            .toString()
+            .trim()
+            .toLowerCase()
+            .replaceAll("é", "e")
+            .replaceAll("è", "e")
+            .replaceAll("ê", "e")
+            .replaceAll("à", "a")
+            .replaceAll("â", "a")
+            .replaceAll("ù", "u")
+            .replaceAll("û", "u")
+            .replaceAll("î", "i")
+            .replaceAll("ï", "i")
+            .replaceAll("ç", "c");
+        }
+        function parseNumber(s) {
+          if (s == null) return null;
+          const t = String(s).trim().replace(/\s/g, "").replace(",", ".");
+          if (t === "") return null;
+          const n = Number(t);
+          return Number.isFinite(n) ? n : null;
+        }
+        function normalizeDateValue(v) {
+          if (v == null) return "";
+          if (v instanceof Date && !isNaN(v.getTime())) {
+            const yyyy = v.getFullYear();
+            const mm = String(v.getMonth() + 1).padStart(2, "0");
+            const dd = String(v.getDate()).padStart(2, "0");
+            return `${yyyy}-${mm}-${dd}`;
+          }
+          const s = String(v).trim();
+          if (!s) return "";
+          if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+          const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+          if (m) {
+            const dd = String(m[1]).padStart(2, "0");
+            const mm = String(m[2]).padStart(2, "0");
+            let yyyy = m[3];
+            if (yyyy.length === 2) yyyy = "20" + yyyy;
+            return `${yyyy}-${mm}-${dd}`;
+          }
+          return s;
+        }
+        function mapType(t) {
+          const s = (t || "").toLowerCase().trim();
+          if (
+            s.includes("elec") ||
+            s.includes("élec") ||
+            s.includes("electric")
+          )
+            return "elec";
+          if (s.includes("eau")) return "eau";
+          if (s.includes("gaz")) return "gaz";
+          if (s.includes("chaud")) return "chaud";
+          if (s.includes("froid")) return "froid";
+          return "elec";
+        }
+        function typeChip(type) {
+          return typeLabels[type] || type;
+        }
+
+        function getNodeBoxW() {
+          if (DISPLAY_MODE === "symbol") return 64;
+          const w =
+            parseInt(
+              getComputedStyle(document.documentElement).getPropertyValue(
+                "--nodeW"
+              )
+            ) || 170;
+          return w;
+        }
+        function getNodeBoxH() {
+          if (DISPLAY_MODE === "symbol") return 86;
+          const h =
+            parseInt(
+              getComputedStyle(document.documentElement).getPropertyValue(
+                "--nodeH"
+              )
+            ) || 96;
+          return h;
+        }
+        function getNodeEl(id) {
+          return document.querySelector(`.node[data-id="${CSS.escape(id)}"]`);
+        }
+
+        function getAnchorPoints(nodeId) {
+          const el = getNodeEl(nodeId);
+          if (!el) return null;
+          const r = el.getBoundingClientRect();
+          const c = canvas.getBoundingClientRect();
+          const zx = state.zoom || 1;
+          return {
+            left: {
+              x: (r.left - c.left + canvas.scrollLeft) / zx,
+              y: (r.top - c.top + canvas.scrollTop + r.height / 2) / zx,
+            },
+            right: {
+              x: (r.left - c.left + canvas.scrollLeft + r.width) / zx,
+              y: (r.top - c.top + canvas.scrollTop + r.height / 2) / zx,
+            },
+          };
+        }
+
+        function updateCounts() {
+          chipCounts.textContent = `${state.nodes.size} compteurs • ${state.links.length} liens`;
+        }
+
+        function computeChildrenSum(parentId) {
+          let sum = 0;
+          for (const l of state.links) {
+            if (l.from !== parentId) continue;
+            const child = state.nodes.get(l.to);
+            if (child && typeof child.index === "number") sum += child.index;
+          }
+          return sum;
+        }
+        function computeChildrenFormula(parentId) {
+          const parts = [];
+          for (const l of state.links) {
+            if (l.from !== parentId) continue;
+            const c = state.nodes.get(l.to);
+            if (c && typeof c.index === "number") parts.push(c.id);
+          }
+          return parts.length ? parts.join(" + ") : "";
+        }
+
+        function setMode(mode) {
+          state.mode = mode;
+          chipMode.textContent =
+            "Mode : " + (mode === "link" ? "Création de lien" : "Sélection");
+          if (mode !== "link") state.linkStep.from = null;
+          renderLinks();
+        }
+
+        function setFilter(typeKey) {
+          state.filterType = typeKey;
+          const label = TYPES.find((t) => t.key === typeKey)?.label || typeKey;
+          chipFilter.textContent = "Filtre : " + label;
+          autoRecalc(); // ✅ repositionne et affiche le bon plan
+        }
+
+        function setZoom(z) {
+          state.zoom = z;
+          canvas.style.transform = `scale(${z})`;
+          zoomLabel.textContent = Math.round(z * 100) + "%";
+          renderLinks();
+        }
+
+        function clearEditor() {
+          f_id.value = "";
+          f_site.value = "";
+          f_nom.value = "";
+          f_etage.value = "";
+          f_parent.value = "";
+          f_index.value = "";
+          f_unite.value = "";
+          f_type.value = state.filterType || "elec";
+          f_date.value = "";
+          f_index.disabled = false;
+          if (f_tenantAssign) f_tenantAssign.value = "";
+        }
+
+        function fillEditor(node) {
+          f_id.value = node.id || "";
+          f_site.value = node.site || "";
+          f_nom.value = node.nom || "";
+          f_etage.value = node.etage || "";
+          f_parent.value = node.parent || "";
+          f_index.value = (node.index ?? "") + "";
+          f_unite.value = node.unite || "";
+          f_type.value = node.type || state.filterType || "elec";
+          f_date.value = node.date || "";
+          f_index.disabled = node.calculated === true;
+
+          if (f_tenantAssign) {
+            const mapped = state.tenantMap?.[node.id] || "";
+            f_tenantAssign.value = mapped;
+          }
+        }
+
+        function selectNode(id) {
+          state.selectedId = id;
+          document
+            .querySelectorAll(".node")
+            .forEach((n) => n.classList.remove("selected"));
+          const el = getNodeEl(id);
+          if (el) el.classList.add("selected");
+          const node = state.nodes.get(id);
+          if (node) fillEditor(node);
+        }
+
+        function deselect() {
+          state.selectedId = null;
+          document
+            .querySelectorAll(".node")
+            .forEach((n) => n.classList.remove("selected"));
+        }
+
+        function addOrUpdateNode(node, { keepPosition = false } = {}) {
+          const exists = state.nodes.has(node.id);
+          if (exists) {
+            const cur = state.nodes.get(node.id);
+            const merged = {
+              ...cur,
+              ...node,
+              x: keepPosition ? cur.x : node.x ?? cur.x,
+              y: keepPosition ? cur.y : node.y ?? cur.y,
+            };
+            state.nodes.set(node.id, merged);
+          } else {
+            state.nodes.set(node.id, {
+              id: node.id,
+              site: node.site || "",
+              nom: node.nom || "",
+              etage: node.etage || "",
+              parent: node.parent || "",
+              date: node.date || "",
+              index: node.index ?? null,
+              unite: node.unite || "",
+              type: node.type || "elec",
+              x: node.x ?? COL_X0,
+              y: node.y ?? 120,
+              calculated: !!node.calculated,
+            });
+          }
+        }
+
+        function removeNode(id) {
+          state.links = state.links.filter((l) => l.from !== id && l.to !== id);
+          state.nodes.delete(id);
+          if (state.tenantMap && state.tenantMap[id])
+            delete state.tenantMap[id];
+          if (state.selectedId === id) deselect();
+          renderAll();
+          autoRecalc();
+        }
+
+        function linkExists(from, to) {
+          return state.links.some((l) => l.from === from && l.to === to);
+        }
+
+        function ensureLink(from, to) {
+          if (!from || !to || from === to) return;
+          if (!state.nodes.has(from) || !state.nodes.has(to)) return;
+          if (linkExists(from, to)) return;
+          state.links.push({ id: uid("L"), from, to });
+        }
+
+        // ✅ important : si parent est créé après l'enfant, on recrée les liens manquants
+        function reconcileParentLinks() {
+          for (const n of state.nodes.values()) {
+            const p = (n.parent || "").trim();
+            if (p && state.nodes.has(p)) ensureLink(p, n.id);
+          }
+        }
+
+        function updateParentLink(childId, parentIdRaw) {
+          const parentId = (parentIdRaw || "").trim();
+          state.links = state.links.filter((l) => l.to !== childId);
+
+          const n = state.nodes.get(childId);
+          if (n) {
+            n.parent = parentId;
+            state.nodes.set(childId, n);
+          }
+
+          if (
+            parentId &&
+            state.nodes.has(parentId) &&
+            state.nodes.has(childId)
+          ) {
+            ensureLink(parentId, childId);
+          }
+        }
+
+        // ✅ affichage parent ID + nom (mais le stockage reste ID)
+        function parentDisplay(parentId) {
+          const pid = (parentId || "").trim();
+          if (!pid) return "—";
+          const p = state.nodes.get(pid);
+          if (!p) return pid;
+          const nm = (p.nom || "").trim();
+          return nm ? `${pid} • ${nm}` : pid;
+        }
+
+        function renderTabs() {
+          const tabs = document.getElementById("typeTabs");
+          tabs.innerHTML = "";
+          TYPES.forEach((t) => {
+            const b = document.createElement("div");
+            b.className = "tab" + (state.filterType === t.key ? " active" : "");
+            b.textContent = t.label;
+            b.addEventListener("click", () => setFilter(t.key));
+            tabs.appendChild(b);
+          });
+          chipFilter.textContent =
+            "Filtre : " +
+            (TYPES.find((x) => x.key === state.filterType)?.label ||
+              state.filterType);
+        }
+
+        // ✅ auto-layout PAR énergie (plus de “Tous”)
+        function autoLayoutPlanDeComptage(typeKey) {
+          const H = getNodeBoxH();
+          const START_Y = 120;
+
+          const GAP_C = H + 140;
+          const GAP_SC = H + 90;
+          const GAP_SSC = H + 60;
+
+          const nodesInType = [...state.nodes.values()].filter(
+            (n) => n.type === typeKey
+          );
+          const idSet = new Set(nodesInType.map((n) => n.id));
+
+          const children = {};
+          for (const n of nodesInType) children[n.id] = [];
+
+          for (const l of state.links) {
+            if (!idSet.has(l.from) || !idSet.has(l.to)) continue;
+            if (children[l.from]) children[l.from].push(l.to);
+          }
+
+          const roots = nodesInType
+            .map((n) => n.id)
+            .filter(
+              (id) => !state.links.some((l) => l.to === id && idSet.has(l.from))
+            );
+
+          roots.sort((a, b) =>
+            (state.nodes.get(a)?.nom || a).localeCompare(
+              state.nodes.get(b)?.nom || b
+            )
+          );
+
+          let yGlobal = START_Y;
+
+          for (const cId of roots) {
+            const C = state.nodes.get(cId);
+            if (!C) continue;
+
+            C.x = COL_X0;
+            C.y = snapToGrid(yGlobal);
+            state.nodes.set(cId, C);
+
+            const scList = (children[cId] || []).slice();
+            scList.sort((a, b) =>
+              (state.nodes.get(a)?.nom || a).localeCompare(
+                state.nodes.get(b)?.nom || b
+              )
+            );
+
+            let yBranch = C.y;
+
+            for (const scId of scList) {
+              const SC = state.nodes.get(scId);
+              if (!SC) continue;
+
+              SC.x = COL_X0 + COL_GAP;
+              SC.y = snapToGrid(yBranch);
+              state.nodes.set(scId, SC);
+
+              const sscList = (children[scId] || []).slice();
+              sscList.sort((a, b) =>
+                (state.nodes.get(a)?.nom || a).localeCompare(
+                  state.nodes.get(b)?.nom || b
+                )
+              );
+
+              let ySSC = SC.y;
+
+              for (const sscId of sscList) {
+                const SSC = state.nodes.get(sscId);
+                if (!SSC) continue;
+
+                SSC.x = COL_X0 + 2 * COL_GAP;
+                SSC.y = snapToGrid(ySSC);
+                state.nodes.set(sscId, SSC);
+
+                ySSC += GAP_SSC;
+              }
+
+              yBranch = Math.max(yBranch + GAP_SC, ySSC);
+            }
+
+            yGlobal = yBranch + GAP_C;
+          }
+        }
+
+        function autoRecalc() {
+          if (chkAutoParent.checked) {
+            const nodesArr = [...state.nodes.values()];
+            const generalsByType = new Map();
+            for (const n of nodesArr) {
+              const nm = (n.nom || "").toLowerCase();
+              if (nm.includes("général") || nm.includes("general")) {
+                if (!generalsByType.has(n.type))
+                  generalsByType.set(n.type, n.id);
+              }
+            }
+            for (const n of nodesArr) {
+              if (!n.parent) {
+                const gid = generalsByType.get(n.type);
+                if (gid && gid !== n.id) updateParentLink(n.id, gid);
+              }
+            }
+          }
+
+          reconcileParentLinks();
+
+          if (chkAutoLayout.checked) autoLayoutPlanDeComptage(state.filterType);
+
+          renderAll();
+          saveCurrentPlanToStore();
+        }
+
+        function renderNodes() {
+          [...canvas.querySelectorAll(".node")].forEach((el) => el.remove());
+
+          for (const node of state.nodes.values()) {
+            if (node.type !== state.filterType) continue;
+
+            const el = document.createElement("div");
+            el.className = "node";
+            if (DISPLAY_MODE === "symbol") el.classList.add("symbol");
+            el.dataset.id = node.id;
+
+            el.style.left = node.x + "px";
+            el.style.top = node.y + "px";
+
+            el.innerHTML = `
+              <div class="meterWrap">
+                <div class="meterIcon">
+                  <svg viewBox="0 0 120 160" class="meterSvg">
+                    <circle cx="60" cy="55" r="45"/>
+                    <rect x="30" y="30" width="60" height="20" rx="3"/>
+                    <line x1="42" y1="30" x2="42" y2="50"/>
+                    <line x1="54" y1="30" x2="54" y2="50"/>
+                    <line x1="66" y1="30" x2="66" y2="50"/>
+                    <line x1="78" y1="30" x2="78" y2="50"/>
+                    <circle cx="40" cy="70" r="2"/>
+                    <circle cx="52" cy="70" r="2"/>
+                    <circle cx="64" cy="70" r="2"/>
+                    <circle cx="76" cy="70" r="2"/>
+                    <path d="M60 82 L54 95 L62 95 L56 110"/>
+                    <rect x="30" y="105" width="60" height="35" rx="4"/>
+                  </svg>
+
+                  <div class="meterDetails">
+                    <div style="font-weight:600;color:#00d4ff;margin-bottom:6px;">
+                      ${escapeHtml(node.nom || "Compteur")}
+                    </div>
+                    <div><b>ID :</b> ${escapeHtml(node.id)}</div>
+                    <div><b>Parent :</b> ${escapeHtml(
+                      parentDisplay(node.parent)
+                    )}</div>
+                    <div><b>Type :</b> ${escapeHtml(typeChip(node.type))}</div>
+                    <div style="margin-top:6px"><b>Index :</b> ${escapeHtml(
+                      node.index ?? "—"
+                    )} ${escapeHtml(node.unite || "")}</div>
+                  </div>
+                </div>
+
+                ${
+                  node.calculated
+                    ? `<div class="formula">= ${escapeHtml(
+                        computeChildrenFormula(node.id)
+                      )}</div>`
+                    : ``
+                }
+
+                <div class="addChildBtn" title="Ajouter un sous-compteur">＋</div>
+              </div>
+              <div class="sumBtn" title="Somme des sous-compteurs">＝</div>
+              <div class="childPicker hidden">
+                <input type="text" class="childSearch" placeholder="🔍 Rechercher…" />
+                <div class="childList"></div>
+              </div>
+            `;
+
+            const addBtn = el.querySelector(".addChildBtn");
+            const picker = el.querySelector(".childPicker");
+            const list = el.querySelector(".childList");
+            const search = el.querySelector(".childSearch");
+            const sumBtn = el.querySelector(".sumBtn");
+
+            if (sumBtn) {
+              sumBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const n = state.nodes.get(node.id);
+                if (!n) return;
+
+                const total = computeChildrenSum(n.id);
+                n.index = total;
+                n.calculated = true;
+
+                state.nodes.set(n.id, n);
+                if (state.selectedId === n.id) f_index.value = total;
+
+                renderAll();
+                saveCurrentPlanToStore();
+              });
+            }
+
+            if (addBtn && picker && list && search) {
+              addBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                picker.classList.toggle("hidden");
+                renderChildPicker("");
+              });
+
+              function renderChildPicker(filter) {
+                list.innerHTML = "";
+                const q = (filter || "").toLowerCase();
+
+                const items = importBuffer.filter((n) => {
+                  if (state.nodes.has(n.id)) return false;
+                  if (n.type !== state.filterType) return false; // ✅ on ne propose que le type courant
+                  return (
+                    !q ||
+                    n.id.toLowerCase().includes(q) ||
+                    (n.nom || "").toLowerCase().includes(q)
+                  );
+                });
+
+                if (!items.length) {
+                  list.innerHTML = `<div class="childItem" style="opacity:.6">Aucun compteur</div>`;
+                  return;
+                }
+
+                for (const it of items) {
+                  const div = document.createElement("div");
+                  div.className = "childItem";
+                  div.textContent = it.nom || it.id;
+                  div.addEventListener("click", () => {
+                    generateImportedChild(node.id, it.id);
+                    picker.classList.add("hidden");
+                  });
+                  list.appendChild(div);
+                }
+              }
+
+              search.addEventListener("input", () =>
+                renderChildPicker(search.value)
+              );
+            }
+
+            el.addEventListener("pointerdown", (ev) => {
+              if (
+                ev.target.closest(".addChildBtn") ||
+                ev.target.closest(".childPicker")
+              )
+                return;
+              ev.preventDefault();
+              ev.stopPropagation();
+
+              if (state.mode === "link") return handleLinkClick(node.id);
+              selectNode(node.id);
+            });
+
+            canvas.appendChild(el);
+          }
+        }
+
+        function drawSvgLine(x1, y1, x2, y2) {
+          const line = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "line"
+          );
+          line.setAttribute("x1", x1);
+          line.setAttribute("y1", y1);
+          line.setAttribute("x2", x2);
+          line.setAttribute("y2", y2);
+          line.setAttribute("stroke", "rgba(0,220,255,0.75)");
+          line.setAttribute("stroke-width", "2");
+          line.setAttribute("stroke-linecap", "round");
+          linksSvg.appendChild(line);
+        }
+
+        function resizeSvgToWorld() {
+          let maxX = 2400,
+            maxY = 1600;
+          const w = getNodeBoxW();
+          const h = getNodeBoxH();
+          const padX = 1200,
+            padY = 1200;
+
+          for (const n of state.nodes.values()) {
+            if (n.type !== state.filterType) continue;
+            maxX = Math.max(maxX, n.x + w + padX);
+            maxY = Math.max(maxY, n.y + h + padY);
+          }
+
+          linksSvg.setAttribute("width", maxX);
+          linksSvg.setAttribute("height", maxY);
+          linksSvg.style.width = maxX + "px";
+          linksSvg.style.height = maxY + "px";
+          linksSvg.setAttribute("viewBox", `0 0 ${maxX} ${maxY}`);
+        }
+
+        function renderLinks() {
+          resizeSvgToWorld();
+          linksSvg.innerHTML = "";
+
+          for (const l of state.links) {
+            const aN = state.nodes.get(l.from);
+            const bN = state.nodes.get(l.to);
+            if (!aN || !bN) continue;
+
+            if (aN.type !== state.filterType || bN.type !== state.filterType)
+              continue;
+
+            const p = getAnchorPoints(l.from);
+            const c = getAnchorPoints(l.to);
+            if (!p || !c) continue;
+
+            const pX = p.right.x,
+              pY = p.right.y;
+            const cX = c.left.x,
+              cY = c.left.y;
+
+            const trunkX = pX + 60;
+            drawSvgLine(pX, pY, trunkX, pY);
+            drawSvgLine(trunkX, pY, trunkX, cY);
+            drawSvgLine(trunkX, cY, cX, cY);
+          }
+        }
+
+        function renderPlanTabs() {
+          const store = loadPlansStore();
+          const activeId = getActivePlanId();
+          planTabs.innerHTML = "";
+
+          const plansSorted = [...store.plans].sort((a, b) => {
+            const ak = a.kind === "building" ? 0 : 1;
+            const bk = b.kind === "building" ? 0 : 1;
+            if (ak !== bk) return ak - bk;
+            return (a.name || "").localeCompare(b.name || "");
+          });
+
+          for (const p of plansSorted) {
+            const b = document.createElement("div");
+            b.className = "tab" + (p.id === activeId ? " active" : "");
+            const prefix = p.kind === "building" ? "🏢" : "👤";
+            b.textContent = `${prefix} ${p.name || "Plan"}`;
+            b.addEventListener("click", () => {
+              saveCurrentPlanToStore();
+              loadPlanIntoState(p.id);
+              showView("synoptique");
+            });
+            planTabs.appendChild(b);
+          }
+        }
+
+        function getCurrentPlanMeta() {
+          const store = loadPlansStore();
+          const id = getActivePlanId();
+          return store.plans.find((p) => p.id === id) || null;
+        }
+
+        function getTenantsForBuilding(buildingPlanId) {
+          const store = loadPlansStore();
+          return store.plans.filter(
+            (p) => p.kind === "tenant" && p.parentBuildingId === buildingPlanId
+          );
+        }
+
+        function refreshTenantAssignUI() {
+          const cur = getCurrentPlanMeta();
+          if (!cur || cur.kind !== "building") {
+            tenantAssignBlock.style.display = "none";
+            return;
+          }
+          const tenants = getTenantsForBuilding(cur.id);
+          if (!tenants.length) {
+            tenantAssignBlock.style.display = "none";
+            return;
+          }
+          tenantAssignBlock.style.display = "block";
+
+          const prev = f_tenantAssign.value || "";
+          f_tenantAssign.innerHTML = `<option value="">— Aucun —</option>`;
+          for (const t of tenants) {
+            const opt = document.createElement("option");
+            opt.value = t.id;
+            opt.textContent = t.name || "Locataire";
+            f_tenantAssign.appendChild(opt);
+          }
+          if (prev) f_tenantAssign.value = prev;
+
+          if (state.selectedId) {
+            const mapped = state.tenantMap?.[state.selectedId] || "";
+            f_tenantAssign.value = mapped;
+          }
+        }
+
+        function renderAll() {
+          renderPlanTabs();
+          renderTabs();
+          renderNodes();
+          renderLinks();
+          updateCounts();
+          refreshTenantAssignUI();
+          renderBuildingsView();
+        }
+
+        function handleLinkClick(id) {
+          if (!state.linkStep.from) {
+            state.linkStep.from = id;
+            chipMode.textContent = "Mode : Création de lien (choisis l'enfant)";
+            renderLinks();
+          } else {
+            const from = state.linkStep.from;
+            const to = id;
+            if (from === to) {
+              state.linkStep.from = null;
+              chipMode.textContent = "Mode : Création de lien";
+              renderLinks();
+              return;
+            }
+
+            ensureLink(from, to);
+            const child = state.nodes.get(to);
+            if (child) {
+              child.parent = from;
+              state.nodes.set(to, child);
+            }
+
+            state.linkStep.from = null;
+            chipMode.textContent = "Mode : Création de lien";
+            autoRecalc();
+          }
+        }
+
+        function showImportPanel() {
+          if (!importBuffer.length) return;
+          importPanel.style.display = "flex";
+          renderImportUI(importSearch.value || "");
+        }
+        function hideImportPanel() {
+          importPanel.style.display = "none";
+        }
+
+        function matchesFilter(n, f) {
+          const q = (f || "").toLowerCase();
+          if (!q) return true;
+          return (
+            String(n.id || "")
+              .toLowerCase()
+              .includes(q) ||
+            String(n.nom || "")
+              .toLowerCase()
+              .includes(q) ||
+            String(n.site || "")
+              .toLowerCase()
+              .includes(q)
+          );
+        }
+
+        function renderImportUI(filterText) {
+          const items = importBuffer
+            .filter((n) => n.type === state.filterType)
+            .filter((n) => matchesFilter(n, filterText));
+
+          importCount.textContent = String(items.length);
+
+          importSelect.innerHTML = `<option value="">— Sélectionner un compteur —</option>`;
+          for (const n of items) {
+            const opt = document.createElement("option");
+            opt.value = n.id;
+            opt.textContent = `${n.id} • ${n.nom || "Sans nom"} • ${
+              n.type || ""
+            }${n.site ? " • " + n.site : ""}`;
+            importSelect.appendChild(opt);
+          }
+
+          importList.innerHTML = "";
+          for (const node of items) {
+            const div = document.createElement("div");
+            div.className = "importItem";
+            div.innerHTML = `
+              <div class="left">
+                <div class="name">${escapeHtml(node.nom || node.id)}</div>
+                <div class="meta">
+                  ${escapeHtml(node.id)} • ${escapeHtml(
+              node.type || ""
+            )} • ${escapeHtml(node.site || "")}
+                  ${node.parent ? " • parent: " + escapeHtml(node.parent) : ""}
+                </div>
+              </div>
+              <button class="importGenBtn">➕ Générer</button>
+            `;
+            div
+              .querySelector(".importGenBtn")
+              .addEventListener("click", (e) => {
+                e.stopPropagation();
+                generateImportedNode(node.id);
+              });
+            div.addEventListener("click", () => {
+              importSelect.value = node.id;
+            });
+            importList.appendChild(div);
+          }
+
+          if (!importBuffer.length) hideImportPanel();
+        }
+
+        function generateImportedNode(id) {
+          const node = importBuffer.find((n) => n.id === id);
+          if (!node) return;
+
+          addOrUpdateNode(node, { keepPosition: false });
+          updateParentLink(node.id, node.parent || "");
+
+          importBuffer = importBuffer.filter((n) => n.id !== id);
+
+          // ✅ si tu génères un node d’un autre type, on bascule sur ce type (sinon tu crois que ça n’a pas marché)
+          if (node.type && node.type !== state.filterType)
+            state.filterType = node.type;
+
+          renderAll();
+          renderImportUI(importSearch.value || "");
+          if (!importBuffer.length) hideImportPanel();
+
+          autoRecalc();
+        }
+
+        importSearch.addEventListener("input", () =>
+          renderImportUI(importSearch.value || "")
+        );
+        btnGenerateSelected.addEventListener("click", () => {
+          const id = importSelect.value;
+          if (!id) {
+            alert("Choisis un compteur dans le listing déroulant.");
+            return;
+          }
+          generateImportedNode(id);
+        });
+        btnCloseImport.addEventListener("click", hideImportPanel);
+
+        // ✅ bouton toggle import (gauche + haut)
+        function toggleImportPanel() {
+          if (!importBuffer.length) {
+            alert("Aucun compteur importé en attente (listing vide).");
+            return;
+          }
+          if (importPanel.style.display === "flex") hideImportPanel();
+          else showImportPanel();
+        }
+        btnToggleImportPanel?.addEventListener("click", toggleImportPanel);
+        btnToggleImportPanelTop?.addEventListener("click", toggleImportPanel);
+
+        btnNew.addEventListener("click", () => {
+          deselect();
+          clearEditor();
+          const next = "C-" + String(state.nodes.size + 1).padStart(3, "0");
+          f_id.value = next;
+          f_nom.value = "Nouveau compteur";
+          f_type.value = state.filterType;
+          f_id.focus();
+        });
+
+        btnApply.addEventListener("click", () => {
+          const id = (f_id.value || "").trim();
+          if (!id) {
+            alert("ID obligatoire.");
+            return;
+          }
+
+          const nodeType = (f_type.value || state.filterType || "elec").trim();
+
+          const node = {
+            id,
+            site: (f_site.value || "").trim(),
+            nom: (f_nom.value || "").trim(),
+            etage: (f_etage.value || "").trim(),
+            parent: (f_parent.value || "").trim(),
+            date: normalizeDateValue(f_date.value),
+            index: parseNumber(f_index.value),
+            unite: (f_unite.value || "").trim(),
+            type: nodeType,
+          };
+
+          addOrUpdateNode(node, { keepPosition: true });
+          updateParentLink(id, node.parent);
+
+          // si tu crées/modifies un compteur sur un autre type -> on bascule sur ce type
+          if (nodeType !== state.filterType) state.filterType = nodeType;
+
+          const cur = getCurrentPlanMeta();
+          if (
+            cur &&
+            cur.kind === "building" &&
+            tenantAssignBlock.style.display !== "none"
+          ) {
+            const tid = (f_tenantAssign.value || "").trim();
+            if (tid) state.tenantMap[id] = tid;
+            else if (state.tenantMap[id]) delete state.tenantMap[id];
+          }
+
+          selectNode(id);
+          autoRecalc();
+        });
+
+        btnDelete.addEventListener("click", () => {
+          const id = state.selectedId || (f_id.value || "").trim();
+          if (!id || !state.nodes.has(id)) {
+            alert("Sélectionne un compteur à supprimer.");
+            return;
+          }
+          if (
+            !confirm(
+              `Supprimer le compteur "${id}" ? (liens associés supprimés)`
+            )
+          )
+            return;
+          removeNode(id);
+        });
+
+        btnClearSel.addEventListener("click", () => {
+          deselect();
+          clearEditor();
+        });
+
+        btnLinkMode.addEventListener("click", () => {
+          if (state.mode === "link") setMode("select");
+          else {
+            setMode("link");
+            chipMode.textContent =
+              "Mode : Création de lien (choisis le parent)";
+          }
+        });
+
+        btnRecalc.addEventListener("click", () => autoRecalc());
+
+        canvas.addEventListener("pointerdown", (ev) => {
+          if (ev.target === canvas || ev.target === linksSvg) {
+            if (state.mode !== "link") deselect();
+          }
+        });
+
+        window.addEventListener("keydown", (ev) => {
+          if (ev.key === "Escape") {
+            if (state.mode === "link") {
+              state.linkStep.from = null;
+              chipMode.textContent = "Mode : Création de lien";
+              renderLinks();
+            }
+            return;
+          }
+          if (ev.key === "Delete" || ev.key === "Backspace") {
+            if (
+              document.activeElement &&
+              ["INPUT", "TEXTAREA", "SELECT"].includes(
+                document.activeElement.tagName
+              )
+            )
+              return;
+            if (state.selectedId) removeNode(state.selectedId);
+          }
+        });
+
+        zoomRange.addEventListener("input", () => {
+          const z = Number(zoomRange.value) / 100;
+          setZoom(z);
+          renderAll();
+        });
+
+        fileCsv.addEventListener("change", async () => {
+          const file = fileCsv.files?.[0];
+          if (!file) return;
+          const ext = (file.name.split(".").pop() || "").toLowerCase();
+
+          try {
+            if (ext === "csv") {
+              const text = await file.text();
+              importCsvText(text);
+            } else if (ext === "xlsx") {
+              if (!ensureXlsx()) return;
+              await importXlsxFile(file);
+            } else {
+              alert("Format non supporté (CSV ou XLSX).");
+              return;
+            }
+
+            // ✅ GÉNÉRATION AUTO (parents/enfants) après import
+            autoGenerateFromImportWithParents();
+
+            fileCsv.value = "";
+            renderAll();
+            autoRecalc();
+          } catch (e) {
+            console.error(e);
+            alert(
+              "Erreur lors de l’import CSV / Excel. (Ouvre la console pour voir le détail)"
+            );
+          }
+        });
+
+        async function importXlsxFile(file) {
+          const buffer = await file.arrayBuffer();
+          const wb = XLSX.read(buffer, {
+            type: "array",
+            cellDates: true,
+            cellText: true,
+          });
+          const sheetName = wb.SheetNames[0];
+          const sheet = wb.Sheets[sheetName];
+          if (!sheet) throw new Error("Aucune feuille détectée.");
+          const rows = XLSX.utils.sheet_to_json(sheet, {
+            defval: "",
+            raw: false,
+          });
+          if (!rows.length) throw new Error("Feuille vide.");
+          importRowsObject(rows);
+        }
+
+        function findKey(obj, candidates) {
+          const keys = Object.keys(obj || {});
+          const normKeys = keys.map((k) => [k, normalizeHeader(k)]);
+          for (const cand of candidates) {
+            const nc = normalizeHeader(cand);
+            const found = normKeys.find(([, nk]) => nk === nc);
+            if (found) return found[0];
+          }
+          return null;
+        }
+
+        function pushToImportBuffer(node) {
+          const id = String(node.id || "").trim();
+          if (!id) return;
+          if (importBuffer.some((n) => n.id === id)) return;
+          if (state.nodes.has(id)) return;
+          importBuffer.push(node);
+        }
+
+        function importRowsObject(rows) {
+          const sample = rows[0] || {};
+          const kId = findKey(sample, ["id", "identifiant"]);
+          const kSite = findKey(sample, [
+            "site",
+            "batiment",
+            "bâtiment",
+            "lab116",
+          ]);
+          const kNom = findKey(sample, ["nom", "name"]);
+          const kEtage = findKey(sample, [
+            "etage",
+            "etage/zone",
+            "niveau",
+            "floor",
+          ]);
+          const kParent = findKey(sample, ["parent", "parentid"]);
+          const kIndex = findKey(sample, [
+            "index",
+            "valeur",
+            "compteur",
+            "reading",
+          ]);
+          const kUnite = findKey(sample, ["unite", "unité", "unit"]);
+          const kType = findKey(sample, ["type", "energie", "energy"]);
+          const kDate = findKey(sample, [
+            "date",
+            "jour",
+            "datetime",
+            "date relevé",
+            "date releve",
+          ]);
+
+          if (!kId) throw new Error("Colonne ID introuvable dans l'Excel.");
+
+          for (const r of rows) {
+            const id = String(r[kId] ?? "").trim();
+            if (!id) continue;
+
+            const node = {
+              id,
+              site: kSite ? String(r[kSite] ?? "").trim() : "",
+              nom: kNom ? String(r[kNom] ?? "").trim() : "",
+              etage: kEtage ? String(r[kEtage] ?? "").trim() : "",
+              parent: kParent ? String(r[kParent] ?? "").trim() : "",
+              date: kDate ? normalizeDateValue(r[kDate]) : "",
+              index: kIndex ? parseNumber(r[kIndex]) : null,
+              unite: kUnite ? String(r[kUnite] ?? "").trim() : "",
+              type: mapType(kType ? String(r[kType] ?? "").trim() : "elec"),
+            };
+            pushToImportBuffer(node);
+          }
+          renderImportUI(importSearch.value || "");
+        }
+
+        function importCsvText(text) {
+          const firstLine =
+            text.split(/\r?\n/).find((l) => l.trim().length > 0) || "";
+          const delim = firstLine.includes("|")
+            ? "|"
+            : firstLine.includes(";")
+            ? ";"
+            : ",";
+
+          const lines = text
+            .split(/\r?\n/)
+            .map((l) => l.trim())
+            .filter((l) => l.length > 0);
+          if (lines.length < 2) throw new Error("CSV vide.");
+
+          const headersRaw = lines[0].split(delim).map((h) => h.trim());
+          const headers = headersRaw.map((h) => normalizeHeader(h));
+          const idx = (name) => headers.indexOf(normalizeHeader(name));
+
+          const col = {
+            id: idx("id"),
+            site: idx("site"),
+            nom: idx("nom"),
+            etage: idx("etage"),
+            parent: idx("parent"),
+            index: idx("index"),
+            unite: (() => {
+              const u1 = idx("unite");
+              if (u1 !== -1) return u1;
+              const u2 = idx("unité");
+              if (u2 !== -1) return u2;
+              return idx("unit");
+            })(),
+            type: idx("type"),
+            date: (() => {
+              const d1 = idx("date");
+              if (d1 !== -1) return d1;
+              const d2 = idx("jour");
+              if (d2 !== -1) return d2;
+              return idx("datetime");
+            })(),
+          };
+
+          if (col.id === -1) throw new Error("CSV: colonne ID manquante.");
+          if (col.type === -1) throw new Error("CSV: colonne type manquante.");
+
+          for (let i = 1; i < lines.length; i++) {
+            const row = lines[i].split(delim).map((x) => x.trim());
+            const id = (row[col.id] || "").trim();
+            if (!id) continue;
+
+            const node = {
+              id,
+              site: col.site !== -1 ? row[col.site] || "" : "",
+              nom: col.nom !== -1 ? row[col.nom] || "" : "",
+              etage: col.etage !== -1 ? row[col.etage] || "" : "",
+              parent: col.parent !== -1 ? (row[col.parent] || "").trim() : "",
+              date: col.date !== -1 ? normalizeDateValue(row[col.date]) : "",
+              index: col.index !== -1 ? parseNumber(row[col.index]) : null,
+              unite: col.unite !== -1 ? row[col.unite] || "" : "",
+              type: mapType((row[col.type] || "").trim()),
+            };
+            pushToImportBuffer(node);
+          }
+          renderImportUI(importSearch.value || "");
+        }
+
+        // ✅ génération auto à partir du listing import :
+        // - génère les parents “généraux” s’ils sont référencés
+        // - génère les enfants uniquement si leur parent existe (dans state ou déjà généré)
+        // - le reste reste dans le listing
+        function autoGenerateFromImportWithParents() {
+          if (!importBuffer.length) return;
+
+          const referencedParents = new Set(
+            importBuffer.map((n) => (n.parent || "").trim()).filter(Boolean)
+          );
+
+          let firstGeneratedType = null;
+          let progress = true;
+
+          while (progress) {
+            progress = false;
+
+            // on parcourt une copie, parce qu'on va retirer
+            for (const it of [...importBuffer]) {
+              const id = (it.id || "").trim();
+              const parent = (it.parent || "").trim();
+              if (!id) continue;
+
+              const isGeneralParent = referencedParents.has(id); // parent d'au moins 1 enfant
+              const parentExists = parent ? state.nodes.has(parent) : true;
+
+              // règles :
+              // 1) si pas de parent -> on génère seulement si c'est un parent référencé (ex: EF-047)
+              if (!parent && !isGeneralParent) continue;
+
+              // 2) si parent renseigné -> on génère seulement si le parent existe déjà
+              if (parent && !state.nodes.has(parent)) continue;
+
+              addOrUpdateNode(it, { keepPosition: false });
+              updateParentLink(id, parent);
+
+              importBuffer = importBuffer.filter((n) => n.id !== id);
+
+              if (!firstGeneratedType) firstGeneratedType = it.type || null;
+              progress = true;
+            }
+          }
+
+          reconcileParentLinks();
+
+          if (firstGeneratedType && firstGeneratedType !== state.filterType) {
+            state.filterType = firstGeneratedType; // ✅ pour que tu vois direct ce qui a été généré
+          }
+
+          if (importBuffer.length) showImportPanel();
+          else hideImportPanel();
+
+          autoRecalc();
+        }
+
+        btnTemplateCsv.addEventListener("click", () => {
+          const template = `ID|Site|Nom|Etage|parent|index|unité|type|date
+EF-047|ASKIA|Général eau froide|RDC||5000|m3|eau|2025-01-01
+EF-001|ASKIA|Sanitaires RDC|RDC|EF-047|120|m3|eau|2025-01-01
+EL-044|ASKIA|Général TGBT élec|RDC||100000|kWh|elec|2025-01-01
+EL-001|ASKIA|Eclairage R+2|R+2|EL-044|12000|kWh|elec|2025-01-01
+EC-028|ASKIA|Distribution générale EC Eau chaude|RDC||35000|kWh|chaud|2025-01-01
+EG-028|ASKIA|Distribution générale Eau glacée|RDC||42000|kWh|froid|2025-01-01
+`;
+          downloadText(
+            template,
+            "modele_compteurs.csv",
+            "text/csv;charset=utf-8"
+          );
+        });
+
+        btnExportJson.addEventListener("click", () => {
+          const data = serializeCurrentPlanPayload();
+          downloadText(
+            JSON.stringify(data, null, 2),
+            "synoptique.json",
+            "application/json;charset=utf-8"
+          );
+        });
+        btnImportJsonBtn.addEventListener("click", () => fileJson.click());
+        fileJson.addEventListener("change", async () => {
+          const file = fileJson.files?.[0];
+          if (!file) return;
+          const text = await file.text();
+          try {
+            const obj = JSON.parse(text);
+            deserializeIntoState(obj, { merge: false });
+            fileJson.value = "";
+            renderAll();
+            autoRecalc();
+          } catch (e) {
+            console.error(e);
+            alert("Import JSON: fichier invalide.");
+          }
+        });
+
+        function serializeCurrentPlanPayload() {
+          return {
+            version: 3,
+            savedAt: new Date().toISOString(),
+            filterType: state.filterType,
+            zoom: state.zoom,
+            nodes: [...state.nodes.values()],
+            links: state.links,
+            importBuffer,
+            tenantMap: state.tenantMap || {},
+            nodeSize: {
+              w:
+                parseInt(
+                  getComputedStyle(document.documentElement).getPropertyValue(
+                    "--nodeW"
+                  )
+                ) || 170,
+              h:
+                parseInt(
+                  getComputedStyle(document.documentElement).getPropertyValue(
+                    "--nodeH"
+                  )
+                ) || 96,
+            },
+          };
+        }
+
+        function deserializeIntoState(obj, { merge = false } = {}) {
+          if (!obj || typeof obj !== "object") throw new Error("bad json");
+
+          const nodes = Array.isArray(obj.nodes) ? obj.nodes : [];
+          const links = Array.isArray(obj.links) ? obj.links : [];
+          const buff = Array.isArray(obj.importBuffer) ? obj.importBuffer : [];
+
+          if (!merge) {
+            state.nodes = new Map();
+            state.links = [];
+            state.tenantMap =
+              obj.tenantMap && typeof obj.tenantMap === "object"
+                ? obj.tenantMap
+                : {};
+            deselect();
+          }
+
+          for (const n of nodes) {
+            if (!n || !n.id) continue;
+            addOrUpdateNode(
+              {
+                id: String(n.id),
+                site: n.site || "",
+                nom: n.nom || "",
+                etage: n.etage || "",
+                parent: n.parent || "",
+                date: normalizeDateValue(n.date || ""),
+                index:
+                  typeof n.index === "number" ? n.index : parseNumber(n.index),
+                unite: n.unite || "",
+                type: mapType(n.type || state.filterType || "elec"),
+                x: typeof n.x === "number" ? n.x : undefined,
+                y: typeof n.y === "number" ? n.y : undefined,
+                calculated: !!n.calculated,
+              },
+              { keepPosition: false }
+            );
+          }
+
+          state.links = [];
+          for (const l of links) {
+            if (!l || !l.from || !l.to) continue;
+            const from = String(l.from);
+            const to = String(l.to);
+            if (state.nodes.has(from) && state.nodes.has(to)) {
+              ensureLink(from, to);
+              const child = state.nodes.get(to);
+              if (child) {
+                child.parent = from;
+                state.nodes.set(child.id, child);
+              }
+            }
+          }
+
+          importBuffer = [];
+          for (const it of buff) {
+            if (!it || !it.id) continue;
+            pushToImportBuffer({
+              id: String(it.id),
+              site: it.site || "",
+              nom: it.nom || "",
+              etage: it.etage || "",
+              parent: it.parent || "",
+              date: normalizeDateValue(it.date || ""),
+              index:
+                typeof it.index === "number" ? it.index : parseNumber(it.index),
+              unite: it.unite || "",
+              type: mapType(it.type || state.filterType || "elec"),
+            });
+          }
+
+          if (obj.filterType) state.filterType = obj.filterType;
+          if (obj.zoom) state.zoom = obj.zoom;
+
+          zoomRange.value = Math.round(state.zoom * 100);
+          setZoom(state.zoom);
+
+          if (obj.nodeSize && obj.nodeSize.w && obj.nodeSize.h) {
+            document.documentElement.style.setProperty(
+              "--nodeW",
+              obj.nodeSize.w + "px"
+            );
+            document.documentElement.style.setProperty(
+              "--nodeH",
+              obj.nodeSize.h + "px"
+            );
+            nodeWidthRange.value = obj.nodeSize.w;
+            nodeHeightRange.value = obj.nodeSize.h;
+            nodeWidthLabel.textContent = obj.nodeSize.w;
+            nodeHeightLabel.textContent = obj.nodeSize.h;
+          }
+
+          if (importBuffer.length) showImportPanel();
+          else hideImportPanel();
+        }
+
+        btnSaveLocal.addEventListener("click", () => {
+          saveCurrentPlanToStore();
+          alert("Sauvegarde locale OK (plan courant).");
+        });
+
+        btnLoadLocal.addEventListener("click", () => {
+          const store = loadPlansStore();
+          const activeId = getActivePlanId();
+          const plan = store.plans.find((p) => p.id === activeId);
+          if (!plan) {
+            alert(
+              "Aucun plan actif à charger. (Crée un plan Bâtiment/Locataire)"
+            );
+            return;
+          }
+          loadPlanIntoState(plan.id);
+          alert("Chargement local OK (plan courant).");
+        });
+
+        btnResetAll.addEventListener("click", () => {
+          if (
+            !confirm(
+              "Reset du plan courant ? (compteurs/liens + listing import)"
+            )
+          )
+            return;
+          state.nodes = new Map();
+          state.links = [];
+          importBuffer = [];
+          state.tenantMap = {};
+          deselect();
+          clearEditor();
+          hideImportPanel();
+          renderAll();
+          saveCurrentPlanToStore();
+        });
+
+        function downloadText(text, filename, mime) {
+          const blob = new Blob([text], { type: mime });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        }
+
+        function updateNodeSize() {
+          const w = Number(nodeWidthRange.value);
+          const h = Number(nodeHeightRange.value);
+          document.documentElement.style.setProperty("--nodeW", w + "px");
+          document.documentElement.style.setProperty("--nodeH", h + "px");
+          nodeWidthLabel.textContent = String(w);
+          nodeHeightLabel.textContent = String(h);
+          renderAll();
+          saveCurrentPlanToStore();
+          autoRecalc();
+        }
+        nodeWidthRange.addEventListener("input", updateNodeSize);
+        nodeHeightRange.addEventListener("input", updateNodeSize);
+
+        function generateImportedChild(parentId, importedId) {
+          const parent = state.nodes.get(parentId);
+          if (!parent) return;
+
+          const imported = importBuffer.find((n) => n.id === importedId);
+
+          if (!imported && state.nodes.has(importedId)) {
+            updateParentLink(importedId, parentId);
+            autoRecalc();
+            return;
+          }
+          if (!imported) return;
+
+          const child = { ...imported, parent: parentId };
+          addOrUpdateNode(child, { keepPosition: false });
+          ensureLink(parentId, child.id);
+
+          importBuffer = importBuffer.filter((n) => n.id !== importedId);
+
+          renderAll();
+          selectNode(child.id);
+          autoRecalc();
+        }
+
+        function ensureDefaultPlanIfNone() {
+          const store = loadPlansStore();
+          if (store.plans.length) return;
+
+          const id = uid("P");
+          const plan = {
+            id,
+            kind: "building",
+            name: "Bâtiment 1",
+            buildingId: id,
+            parentBuildingId: "",
+            createdAt: nowIso(),
+            updatedAt: nowIso(),
+            payload: {
+              version: 3,
+              savedAt: nowIso(),
+              filterType: state.filterType,
+              zoom: 1,
+              nodes: [],
+              links: [],
+              importBuffer: [],
+              tenantMap: {},
+              nodeSize: { w: 170, h: 96 },
+            },
+          };
+
+          store.plans.push(plan);
+          savePlansStore(store);
+          setActivePlanId(id);
+        }
+
+        function saveCurrentPlanToStore() {
+          const store = loadPlansStore();
+          const activeId = getActivePlanId();
+          if (!activeId) return;
+          const idx = store.plans.findIndex((p) => p.id === activeId);
+          if (idx === -1) return;
+
+          store.plans[idx].payload = serializeCurrentPlanPayload();
+          store.plans[idx].updatedAt = nowIso();
+          savePlansStore(store);
+        }
+
+        function loadPlanIntoState(planId) {
+          const store = loadPlansStore();
+          const plan = store.plans.find((p) => p.id === planId);
+          if (!plan) return;
+
+          setActivePlanId(planId);
+
+          try {
+            deserializeIntoState(plan.payload || {}, { merge: false });
+          } catch (e) {
+            console.error(e);
+            state.nodes = new Map();
+            state.links = [];
+            importBuffer = [];
+            state.tenantMap = {};
+            deselect();
+            clearEditor();
+            hideImportPanel();
+          }
+
+          planTitle.textContent = plan.name || "Synoptique de Comptage";
+          planKindBadge.textContent =
+            planKindLabel(plan.kind) +
+            (plan.kind === "tenant" && plan.parentBuildingId
+              ? " • lié à un bâtiment"
+              : "");
+
+          renderAll();
+          autoRecalc();
+        }
+
+        function promptPlanName(defaultName) {
+          const name = prompt("Nom du plan :", defaultName || "");
+          if (name == null) return null;
+          const n = name.trim();
+          return n ? n : null;
+        }
+
+        function chooseBuildingPlanId() {
+          const store = loadPlansStore();
+          const buildings = store.plans.filter((p) => p.kind === "building");
+          if (!buildings.length) {
+            alert("Crée d'abord un plan Bâtiment.");
+            return null;
+          }
+          const list = buildings
+            .map((b, i) => `${i + 1}) ${b.name}`)
+            .join("\n");
+          const ans = prompt(
+            "Sélectionne le bâtiment parent (numéro) :\n" + list,
+            "1"
+          );
+          if (ans == null) return null;
+          const idx = Number(ans);
+          if (!Number.isFinite(idx) || idx < 1 || idx > buildings.length) {
+            alert("Choix invalide.");
+            return null;
+          }
+          return buildings[idx - 1].id;
+        }
+
+        function createPlan(kind, { forcedParentBuildingId = "" } = {}) {
+          const store = loadPlansStore();
+          const defaultName =
+            kind === "building"
+              ? `Bâtiment ${
+                  store.plans.filter((p) => p.kind === "building").length + 1
+                }`
+              : `Locataire ${
+                  store.plans.filter((p) => p.kind === "tenant").length + 1
+                }`;
+
+          const name = promptPlanName(defaultName);
+          if (!name) return;
+
+          let parentBuildingId = "";
+          let buildingId = "";
+
+          if (kind === "tenant") {
+            const chosen = forcedParentBuildingId || chooseBuildingPlanId();
+            if (!chosen) return;
+            parentBuildingId = chosen;
+            buildingId = chosen;
+          } else {
+            buildingId = uid("B");
+          }
+
+          const id = uid("P");
+          const plan = {
+            id,
+            kind,
+            name,
+            buildingId: kind === "building" ? id : buildingId,
+            parentBuildingId,
+            createdAt: nowIso(),
+            updatedAt: nowIso(),
+            payload: {
+              version: 3,
+              savedAt: nowIso(),
+              filterType: state.filterType,
+              zoom: 1,
+              nodes: [],
+              links: [],
+              importBuffer: [],
+              tenantMap: {},
+              nodeSize: { w: 170, h: 96 },
+            },
+          };
+
+          store.plans.push(plan);
+          savePlansStore(store);
+
+          saveCurrentPlanToStore();
+          loadPlanIntoState(id);
+        }
+
+        btnNewBuildingPlan.addEventListener("click", () =>
+          createPlan("building")
+        );
+        btnNewTenantPlan.addEventListener("click", () => createPlan("tenant"));
+
+        btnRenamePlan.addEventListener("click", () => {
+          const store = loadPlansStore();
+          const activeId = getActivePlanId();
+          const idx = store.plans.findIndex((p) => p.id === activeId);
+          if (idx === -1) return;
+
+          const cur = store.plans[idx];
+          const name = promptPlanName(cur.name || "");
+          if (!name) return;
+
+          cur.name = name;
+          cur.updatedAt = nowIso();
+          store.plans[idx] = cur;
+          savePlansStore(store);
+
+          planTitle.textContent = name;
+          renderAll();
+          saveCurrentPlanToStore();
+        });
+
+        const btnValidatePlan = document.getElementById("btnValidatePlan");
+        const VALIDATED_ALL_KEY = "energisme_plan_comptage_all_v1";
+
+        if (btnValidatePlan) {
+          btnValidatePlan.addEventListener("click", () => {
+            const meta = getCurrentPlanMeta();
+            const payload = serializeCurrentPlanPayload();
+
+            const planEnergisme = {
+              version: "energisme-1",
+              validatedAt: nowIso(),
+              planId: meta?.id || "",
+              planName: meta?.name || "",
+              planKind: meta?.kind || "",
+              parentBuildingId: meta?.parentBuildingId || "",
+              buildingId: meta?.buildingId || meta?.id || "",
+              nodes: payload.nodes.map((n) => ({
+                id: n.id,
+                nom: n.nom,
+                site: n.site,
+                etage: n.etage,
+                type: n.type,
+                parent: n.parent || "",
+                unite: n.unite || "",
+                tenantPlanId:
+                  state.tenantMap && state.tenantMap[n.id]
+                    ? state.tenantMap[n.id]
+                    : "",
+              })),
+              links: payload.links,
+              tenantMap: state.tenantMap || {},
+            };
+
+            localStorage.setItem(
+              "energisme_plan_comptage",
+              JSON.stringify(planEnergisme)
+            );
+
+            let all = [];
+            try {
+              all = JSON.parse(localStorage.getItem(VALIDATED_ALL_KEY) || "[]");
+              if (!Array.isArray(all)) all = [];
+            } catch {
+              all = [];
+            }
+
+            const i = all.findIndex(
+              (x) => x && x.planId === planEnergisme.planId
+            );
+            if (i !== -1) all[i] = planEnergisme;
+            else all.push(planEnergisme);
+            localStorage.setItem(VALIDATED_ALL_KEY, JSON.stringify(all));
+
+            saveCurrentPlanToStore();
+            alert(
+              "✅ Plan de comptage VALIDÉ (plan courant) et enregistré pour ENERGISME"
+            );
+          });
+        }
+
+        let selectedBuildingPlanId = "";
+        let selectedTenantPlanId = "";
+
+        function renderBuildingsView() {
+          if (!buildingsList || !tenantsList) return;
+
+          const store = loadPlansStore();
+          const buildings = store.plans
+            .filter((p) => p.kind === "building")
+            .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+          if (!selectedBuildingPlanId && buildings.length)
+            selectedBuildingPlanId = buildings[0].id;
+
+          buildingsList.innerHTML = "";
+          if (!buildings.length) {
+            buildingsList.innerHTML = `<div class="small" style="opacity:.8">Aucun bâtiment. Clique “➕ Ajouter”.</div>`;
+          } else {
+            for (const b of buildings) {
+              const div = document.createElement("div");
+              div.className =
+                "item" + (b.id === selectedBuildingPlanId ? " active" : "");
+              div.textContent = b.name || "Bâtiment";
+              div.onclick = () => {
+                selectedBuildingPlanId = b.id;
+                selectedTenantPlanId = "";
+                renderBuildingsView();
+              };
+              buildingsList.appendChild(div);
+            }
+          }
+
+          tenantsList.innerHTML = "";
+          if (!selectedBuildingPlanId) {
+            tenantsList.innerHTML = `<div class="small" style="opacity:.8">Sélectionne un bâtiment.</div>`;
+            return;
+          }
+          const tenants = store.plans
+            .filter(
+              (p) =>
+                p.kind === "tenant" &&
+                p.parentBuildingId === selectedBuildingPlanId
+            )
+            .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+
+          if (!tenants.length) {
+            tenantsList.innerHTML = `<div class="small" style="opacity:.8">Aucun locataire pour ce bâtiment.</div>`;
+          } else {
+            for (const t of tenants) {
+              const div = document.createElement("div");
+              div.className =
+                "item" + (t.id === selectedTenantPlanId ? " active" : "");
+              div.textContent = t.name || "Locataire";
+              div.onclick = () => {
+                selectedTenantPlanId = t.id;
+                renderBuildingsView();
+              };
+              tenantsList.appendChild(div);
+            }
+          }
+        }
+
+        function deletePlan(planId) {
+          const store = loadPlansStore();
+          const idx = store.plans.findIndex((p) => p.id === planId);
+          if (idx === -1) return false;
+          store.plans.splice(idx, 1);
+          savePlansStore(store);
+          return true;
+        }
+
+        function deleteBuildingAndItsTenants(buildingPlanId) {
+          const store = loadPlansStore();
+          const keep = store.plans.filter(
+            (p) =>
+              !(
+                p.id === buildingPlanId ||
+                (p.kind === "tenant" && p.parentBuildingId === buildingPlanId)
+              )
+          );
+          store.plans = keep;
+          savePlansStore(store);
+        }
+
+        btnSaveBuildingsView?.addEventListener("click", () => {
+          alert("✅ Enregistré (plans Bâtiment/Locataires)");
+        });
+
+        btnAddBuilding?.addEventListener("click", () => {
+          createPlan("building");
+          const active = getActivePlanId();
+          const meta = getCurrentPlanMeta();
+          if (meta && meta.kind === "building") {
+            selectedBuildingPlanId = active;
+            selectedTenantPlanId = "";
+          }
+          renderBuildingsView();
+        });
+
+        btnRemoveBuilding?.addEventListener("click", () => {
+          if (!selectedBuildingPlanId) {
+            alert("Sélectionne un bâtiment.");
+            return;
+          }
+          const store = loadPlansStore();
+          const b = store.plans.find((p) => p.id === selectedBuildingPlanId);
+          if (!b) return;
+
+          if (!confirm(`Supprimer le bâtiment "${b.name}" + ses locataires ?`))
+            return;
+
+          deleteBuildingAndItsTenants(selectedBuildingPlanId);
+
+          const active = getActivePlanId();
+          if (active === selectedBuildingPlanId) {
+            const st = loadPlansStore();
+            const fallback =
+              st.plans.find((p) => p.kind === "building") || st.plans[0];
+            if (fallback) setActivePlanId(fallback.id);
+          }
+
+          selectedBuildingPlanId = "";
+          selectedTenantPlanId = "";
+          renderBuildingsView();
+
+          const active2 = getActivePlanId();
+          if (active2) loadPlanIntoState(active2);
+        });
+
+        btnAddTenant?.addEventListener("click", () => {
+          if (!selectedBuildingPlanId) {
+            alert("Sélectionne un bâtiment.");
+            return;
+          }
+          createPlan("tenant", {
+            forcedParentBuildingId: selectedBuildingPlanId,
+          });
+          const active = getActivePlanId();
+          const meta = getCurrentPlanMeta();
+          if (meta && meta.kind === "tenant") selectedTenantPlanId = active;
+          renderBuildingsView();
+        });
+
+        btnRemoveTenant?.addEventListener("click", () => {
+          if (!selectedTenantPlanId) {
+            alert("Sélectionne un locataire.");
+            return;
+          }
+          const store = loadPlansStore();
+          const t = store.plans.find((p) => p.id === selectedTenantPlanId);
+          if (!t) return;
+
+          if (!confirm(`Supprimer le locataire "${t.name}" ?`)) return;
+
+          deletePlan(selectedTenantPlanId);
+
+          const active = getActivePlanId();
+          if (active === selectedTenantPlanId) {
+            const st = loadPlansStore();
+            const fallback =
+              st.plans.find((p) => p.kind === "building") || st.plans[0];
+            if (fallback) setActivePlanId(fallback.id);
+          }
+
+          selectedTenantPlanId = "";
+          renderBuildingsView();
+
+          const active2 = getActivePlanId();
+          if (active2) loadPlanIntoState(active2);
+        });
+
+        function showView(view) {
+          if (!viewSynoptique || !viewBuildings) return;
+          viewSynoptique.style.display =
+            view === "synoptique" ? "block" : "none";
+          viewBuildings.style.display = view === "buildings" ? "block" : "none";
+
+          tabViewSyn?.classList.toggle("active", view === "synoptique");
+          tabViewBat?.classList.toggle("active", view === "buildings");
+
+          if (view === "buildings") renderBuildingsView();
+          if (view === "synoptique") renderAll();
+        }
+
+        tabViewSyn?.addEventListener("click", () => showView("synoptique"));
+        tabViewBat?.addEventListener("click", () => showView("buildings"));
+
+        function initNodeSizeLabels() {
+          nodeWidthLabel.textContent = nodeWidthRange.value;
+          nodeHeightLabel.textContent = nodeHeightRange.value;
+        }
+
+        ensureDefaultPlanIfNone();
+
+        const activeId = getActivePlanId();
+        if (activeId) loadPlanIntoState(activeId);
+
+        initNodeSizeLabels();
+        setZoom(1);
+        setMode("select");
+        setFilter(state.filterType); // ✅ pas de “Tous”
+        renderAll();
+        autoRecalc();
+        renderBuildingsView();
+
+        window.addEventListener("beforeunload", () => {
+          try {
+            saveCurrentPlanToStore();
+          } catch {}
+        });
+      })();
+    </script>
+  </body>
+</html>
