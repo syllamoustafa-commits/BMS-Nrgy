@@ -1,0 +1,3028 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ENERGISME — Dashboard</title>
+
+    <style>
+      :root {
+        --bg0: #070b12;
+        --bg1: #0b1220;
+        --panel: rgba(20, 28, 45, 0.66);
+        --panel2: rgba(18, 26, 44, 0.82);
+        --stroke: rgba(120, 180, 255, 0.22);
+        --stroke2: rgba(120, 180, 255, 0.35);
+        --text: #d7f2ff;
+        --muted: #9fb6c7;
+
+        --cyan: #00d4ff;
+        --cyan2: #2aa6ff;
+        --green: #2ee59d;
+        --orange: #ffb84d;
+        --red: #ff5c7a;
+
+        --shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+        --blur: blur(14px);
+        --r16: 16px;
+        --r20: 20px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--text);
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial,
+          sans-serif;
+        background: radial-gradient(
+            1000px 700px at 30% -10%,
+            rgba(0, 212, 255, 0.18),
+            transparent 55%
+          ),
+          radial-gradient(
+            900px 700px at 120% 10%,
+            rgba(46, 229, 157, 0.1),
+            transparent 60%
+          ),
+          radial-gradient(
+            900px 800px at 40% 120%,
+            rgba(42, 166, 255, 0.1),
+            transparent 60%
+          ),
+          linear-gradient(180deg, var(--bg1), var(--bg0));
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      .app {
+        height: 100vh;
+        display: grid;
+        grid-template-columns: 310px 1fr 360px;
+        gap: 14px;
+        padding: 18px;
+      }
+
+      .topbar {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        right: 12px;
+        height: 52px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        border-radius: 14px;
+        background: linear-gradient(
+          180deg,
+          rgba(18, 26, 44, 0.78),
+          rgba(10, 14, 26, 0.65)
+        );
+        border: 1px solid var(--stroke);
+        backdrop-filter: var(--blur);
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.38);
+        z-index: 5;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 10px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        color: var(--text);
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--cyan);
+        box-shadow: 0 0 12px rgba(0, 212, 255, 0.75);
+      }
+
+      .tb-left,
+      .tb-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .tb-title {
+        font-weight: 700;
+        letter-spacing: 0.2px;
+        font-size: 12px;
+        color: rgba(215, 242, 255, 0.92);
+      }
+      .btn-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        color: rgba(215, 242, 255, 0.9);
+        cursor: pointer;
+        transition: 0.15s ease;
+      }
+      .btn-icon:hover {
+        transform: translateY(-1px);
+        border-color: rgba(0, 212, 255, 0.25);
+        box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.06);
+      }
+
+      .panel {
+        background: linear-gradient(
+          180deg,
+          rgba(18, 26, 44, 0.72),
+          rgba(10, 14, 26, 0.55)
+        );
+        border: 1px solid var(--stroke);
+        border-radius: var(--r20);
+        backdrop-filter: var(--blur);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        position: relative;
+      }
+
+      /* LEFT */
+      .left {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .left .hdr {
+        padding: 12px 12px 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid rgba(120, 180, 255, 0.12);
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .left .hdr strong {
+        font-size: 13px;
+      }
+      .left .tabs {
+        display: flex;
+        gap: 8px;
+        padding: 10px 12px;
+        border-bottom: 1px solid rgba(120, 180, 255, 0.1);
+      }
+      .tab {
+        flex: 1;
+        text-align: center;
+        padding: 9px 10px;
+        border-radius: 14px;
+        font-size: 12px;
+        color: rgba(215, 242, 255, 0.78);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(255, 255, 255, 0.03);
+        cursor: pointer;
+        transition: 0.15s;
+        user-select: none;
+      }
+      .tab.active {
+        border-color: rgba(0, 212, 255, 0.25);
+        box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.06);
+        color: rgba(215, 242, 255, 0.95);
+      }
+      .search {
+        padding: 10px 12px 12px;
+      }
+      .search input {
+        width: 100%;
+        padding: 11px 12px;
+        border-radius: 14px;
+        outline: none;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(0, 0, 0, 0.18);
+        color: rgba(215, 242, 255, 0.92);
+      }
+      .menu {
+        padding: 6px 8px 10px;
+        overflow: auto;
+        flex: 1;
+      }
+      .menu h4 {
+        margin: 10px 10px 6px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.35px;
+        color: rgba(159, 182, 199, 0.95);
+        text-transform: uppercase;
+      }
+      .item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 10px;
+        border-radius: 14px;
+        margin: 6px 6px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(255, 255, 255, 0.02);
+        cursor: pointer;
+        transition: 0.15s ease;
+      }
+      .item:hover {
+        border-color: rgba(0, 212, 255, 0.18);
+        background: rgba(0, 212, 255, 0.04);
+      }
+      .ico {
+        width: 28px;
+        height: 28px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.03);
+        color: rgba(215, 242, 255, 0.9);
+        flex: 0 0 auto;
+      }
+      .item .txt {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1;
+      }
+      .item .txt b {
+        font-size: 12px;
+      }
+      .item .txt span {
+        font-size: 11px;
+        color: rgba(159, 182, 199, 0.85);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 210px;
+      }
+      .ok {
+        font-size: 11px;
+        font-weight: 900;
+        padding: 3px 8px;
+        border-radius: 999px;
+        border: 1px solid rgba(46, 229, 157, 0.25);
+        background: rgba(46, 229, 157, 0.1);
+        color: rgba(46, 229, 157, 0.95);
+      }
+      .bad {
+        font-size: 11px;
+        font-weight: 900;
+        padding: 3px 8px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 92, 122, 0.25);
+        background: rgba(255, 92, 122, 0.1);
+        color: rgba(255, 92, 122, 0.95);
+      }
+      .left .bottom {
+        padding: 10px 12px;
+        border-top: 1px solid rgba(120, 180, 255, 0.1);
+        background: rgba(255, 255, 255, 0.02);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 10px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(0, 0, 0, 0.16);
+        font-size: 12px;
+        color: rgba(215, 242, 255, 0.9);
+      }
+
+      /* CENTER */
+      .center {
+        position: relative;
+        min-width: 0;
+        overflow: hidden;
+      }
+      .stage {
+        position: absolute;
+        inset: 70px 12px 72px 12px;
+        border-radius: 18px;
+        border: 1px solid rgba(120, 180, 255, 0.1);
+        background: radial-gradient(
+            900px 600px at 30% 20%,
+            rgba(0, 212, 255, 0.1),
+            transparent 55%
+          ),
+          radial-gradient(
+            700px 500px at 90% 30%,
+            rgba(46, 229, 157, 0.07),
+            transparent 55%
+          ),
+          linear-gradient(180deg, rgba(8, 10, 16, 0.1), rgba(8, 10, 16, 0.25));
+        overflow: hidden;
+      }
+      .grid {
+        position: absolute;
+        inset: 0;
+        background-image: linear-gradient(
+            rgba(255, 255, 255, 0.04) 1px,
+            transparent 1px
+          ),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+        background-size: 70px 70px;
+        opacity: 0.25;
+        transform: skewY(-6deg) translateY(-30px);
+      }
+
+      .mid {
+        position: absolute;
+        inset: 14px;
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+        grid-template-rows: auto 1fr auto;
+        gap: 12px;
+        z-index: 3;
+        padding: 12px;
+      }
+      .mid-row1 {
+        grid-column: 1/-1;
+        display: flex;
+        gap: 12px;
+        align-items: stretch;
+        min-height: 182px;
+      }
+      .mid-row2 {
+        grid-column: 1/-1;
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: 12px;
+        min-height: 260px;
+      }
+      .mid-row3 {
+        grid-column: 1/-1;
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 12px;
+        min-height: 220px;
+      }
+
+      .card2 {
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 12px;
+        position: relative;
+        overflow: hidden;
+      }
+      .card2 .ttl {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      .card2 .ttl b {
+        font-size: 12px;
+        letter-spacing: 0.2px;
+      }
+      .card2 .ttl small {
+        color: rgba(159, 182, 199, 0.9);
+        font-size: 11px;
+      }
+
+      .map {
+        width: 320px;
+        min-width: 320px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .mapbox {
+        flex: 1;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(0, 0, 0, 0.16);
+        overflow: hidden;
+        position: relative;
+        min-height: 132px;
+      }
+      .mapbox svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+        opacity: 0.95;
+      }
+      .pin {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        border-radius: 999px;
+        background: var(--red);
+        box-shadow: 0 0 0 4px rgba(255, 92, 122, 0.18),
+          0 0 18px rgba(255, 92, 122, 0.35);
+        transform: translate(-50%, -50%);
+      }
+      .pin::after {
+        content: "";
+        position: absolute;
+        inset: -10px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 92, 122, 0.25);
+        animation: pulse 1.7s infinite ease-out;
+      }
+      @keyframes pulse {
+        0% {
+          transform: scale(0.2);
+          opacity: 0;
+        }
+        35% {
+          opacity: 0.8;
+        }
+        100% {
+          transform: scale(1.25);
+          opacity: 0;
+        }
+      }
+
+      .mapmeta {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 14px;
+        background: rgba(0, 0, 0, 0.14);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        font-size: 12px;
+        color: rgba(215, 242, 255, 0.92);
+      }
+      .tag i {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--cyan);
+        box-shadow: 0 0 12px rgba(0, 212, 255, 0.55);
+      }
+
+      .pieWrap {
+        flex: 1;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        min-width: 0;
+      }
+      .pie {
+        width: 140px;
+        height: 140px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: conic-gradient(
+          var(--cyan) 0 62%,
+          var(--green) 62% 86%,
+          var(--orange) 86% 100%
+        );
+        box-shadow: inset 0 0 0 14px rgba(0, 0, 0, 0.14);
+        position: relative;
+        flex: 0 0 auto;
+      }
+      .pie::after {
+        content: "";
+        position: absolute;
+        inset: 28px;
+        border-radius: 999px;
+        background: rgba(10, 14, 26, 0.72);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .pieCenter {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        z-index: 1;
+        text-align: center;
+        pointer-events: none;
+      }
+      .pieCenter b {
+        font-size: 18px;
+      }
+      .pieCenter span {
+        font-size: 11px;
+        color: rgba(159, 182, 199, 0.9);
+      }
+      .pieLegend {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .leg2 {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        font-size: 11px;
+        color: rgba(159, 182, 199, 0.95);
+        padding: 8px 10px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(0, 0, 0, 0.14);
+      }
+      .sw2 {
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+        margin-right: 8px;
+        display: inline-block;
+      }
+      .sw2.e {
+        background: var(--cyan);
+        box-shadow: 0 0 10px rgba(0, 212, 255, 0.35);
+      }
+      .sw2.w {
+        background: var(--green);
+        box-shadow: 0 0 10px rgba(46, 229, 157, 0.35);
+      }
+      .sw2.g {
+        background: var(--orange);
+        box-shadow: 0 0 10px rgba(255, 184, 77, 0.3);
+      }
+      .sw2.h {
+        background: var(--cyan2);
+        box-shadow: 0 0 10px rgba(42, 166, 255, 0.35);
+      }
+      .sw2.c {
+        background: rgba(215, 242, 255, 0.55);
+        box-shadow: 0 0 10px rgba(215, 242, 255, 0.15);
+      }
+
+      .gRow {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 12px;
+      }
+      .gMini {
+        border-radius: 18px;
+        background: rgba(0, 0, 0, 0.14);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 10px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .ring {
+        width: 64px;
+        height: 64px;
+        border-radius: 999px;
+        background: conic-gradient(
+          var(--green) 0 280deg,
+          rgba(255, 255, 255, 0.1) 280deg 360deg
+        );
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: inset 0 0 0 10px rgba(0, 0, 0, 0.16);
+        position: relative;
+        flex: 0 0 auto;
+      }
+      .ring::after {
+        content: "";
+        position: absolute;
+        inset: 18px;
+        border-radius: 999px;
+        background: rgba(10, 14, 26, 0.75);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .gTxt {
+        min-width: 0;
+      }
+      .gTxt b {
+        display: block;
+        font-size: 12px;
+      }
+      .gTxt span {
+        display: block;
+        font-size: 11px;
+        color: rgba(159, 182, 199, 0.9);
+        margin-top: 3px;
+      }
+      .gTxt .v {
+        font-size: 18px;
+        font-weight: 900;
+        margin-top: 6px;
+        color: rgba(215, 242, 255, 0.95);
+      }
+
+      .hist {
+        height: 168px;
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+        padding: 10px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(0, 0, 0, 0.14);
+        overflow: hidden;
+      }
+      .barCol {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+      .barV {
+        width: 100%;
+        border-radius: 12px 12px 10px 10px;
+        background: linear-gradient(
+          180deg,
+          rgba(0, 212, 255, 0.35),
+          rgba(46, 229, 157, 0.25)
+        );
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 0 18px rgba(0, 212, 255, 0.1);
+        min-height: 8px;
+        position: relative;
+      }
+      .barV::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 10px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 12px 12px 0 0;
+        opacity: 0.35;
+      }
+      .barLbl {
+        font-size: 10px;
+        color: rgba(159, 182, 199, 0.92);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+        text-align: center;
+      }
+
+      .chat {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        height: 100%;
+        min-height: 220px;
+      }
+      .chatBox {
+        flex: 1;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(0, 0, 0, 0.14);
+        padding: 10px;
+        overflow: auto;
+      }
+      .msg {
+        margin: 8px 0;
+        max-width: 92%;
+        padding: 10px 10px;
+        border-radius: 14px;
+        font-size: 12px;
+        line-height: 1.35;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .msg.ai {
+        background: rgba(0, 212, 255, 0.08);
+        border-color: rgba(0, 212, 255, 0.18);
+        box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.05);
+      }
+      .msg.user {
+        margin-left: auto;
+        background: rgba(46, 229, 157, 0.08);
+        border-color: rgba(46, 229, 157, 0.18);
+        box-shadow: 0 0 0 3px rgba(46, 229, 157, 0.05);
+      }
+      .chatInp {
+        display: flex;
+        gap: 8px;
+      }
+      .chatInp input {
+        flex: 1;
+        padding: 11px 12px;
+        border-radius: 14px;
+        outline: none;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.18);
+        color: rgba(215, 242, 255, 0.92);
+      }
+      .send {
+        padding: 11px 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(0, 212, 255, 0.22);
+        background: rgba(0, 212, 255, 0.08);
+        color: rgba(215, 242, 255, 0.95);
+        cursor: pointer;
+      }
+      .send:hover {
+        background: rgba(0, 212, 255, 0.12);
+      }
+
+      .bottom-bar {
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        border-radius: 16px;
+        background: rgba(18, 26, 44, 0.72);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        backdrop-filter: var(--blur);
+        z-index: 5;
+      }
+      .control-group {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .seg {
+        display: flex;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        overflow: hidden;
+        background: rgba(0, 0, 0, 0.14);
+      }
+      .seg button {
+        border: 0;
+        background: transparent;
+        color: rgba(215, 242, 255, 0.82);
+        padding: 9px 11px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .seg button.active {
+        background: rgba(0, 212, 255, 0.1);
+        color: rgba(215, 242, 255, 0.95);
+        box-shadow: inset 0 0 0 1px rgba(0, 212, 255, 0.18);
+      }
+
+      /* RIGHT */
+      .right {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .right .hdr {
+        padding: 12px 12px 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid rgba(120, 180, 255, 0.12);
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .right .hdr strong {
+        font-size: 13px;
+      }
+      .right .content {
+        padding: 12px;
+        overflow: auto;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .card {
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 12px;
+      }
+      .card h3 {
+        margin: 0 0 8px 0;
+        font-size: 12px;
+        color: rgba(215, 242, 255, 0.92);
+        letter-spacing: 0.2px;
+      }
+      .sub {
+        font-size: 11px;
+        color: rgba(159, 182, 199, 0.9);
+        line-height: 1.35;
+      }
+
+      .dpeWrap {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 10px;
+      }
+      .dpeBox {
+        border-radius: 16px;
+        background: rgba(0, 0, 0, 0.16);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 10px;
+        overflow: hidden;
+      }
+      .dpeBox .k {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      .dpeBox .k b {
+        font-size: 11px;
+        letter-spacing: 0.25px;
+        color: rgba(215, 242, 255, 0.92);
+      }
+      .dpeBox .k span {
+        font-size: 11px;
+        color: rgba(159, 182, 199, 0.9);
+      }
+      .dpeSvg {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 12px;
+      }
+      .dpeNote {
+        margin-top: 8px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .dpePill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(0, 0, 0, 0.14);
+        font-size: 11px;
+        color: rgba(215, 242, 255, 0.92);
+      }
+      .dpeBadge {
+        width: 22px;
+        height: 22px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        font-weight: 900;
+        color: rgba(0, 0, 0, 0.85);
+      }
+
+      .climTable {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        overflow: hidden;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(0, 0, 0, 0.14);
+        margin-top: 10px;
+      }
+      .climTable th,
+      .climTable td {
+        padding: 9px 10px;
+        font-size: 11px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .climTable th {
+        color: rgba(159, 182, 199, 0.95);
+        font-weight: 800;
+        text-align: left;
+        background: rgba(255, 255, 255, 0.03);
+      }
+      .climTable td {
+        color: rgba(215, 242, 255, 0.92);
+      }
+      .climTable tr:last-child td {
+        border-bottom: 0;
+      }
+      .num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      .totRow td {
+        background: rgba(0, 212, 255, 0.05);
+      }
+
+      .kpis {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .kpi {
+        border-radius: 16px;
+        background: rgba(0, 0, 0, 0.16);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 10px;
+      }
+      .kpi .label {
+        font-size: 11px;
+        color: rgba(159, 182, 199, 0.9);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .badge-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--cyan2);
+        box-shadow: 0 0 12px rgba(42, 166, 255, 0.55);
+      }
+      .kpi .val {
+        margin-top: 6px;
+        font-size: 18px;
+        font-weight: 800;
+      }
+      .kpi .delta {
+        font-size: 11px;
+        color: rgba(159, 182, 199, 0.92);
+        margin-top: 2px;
+      }
+
+      @media (max-width: 1150px) {
+        .app {
+          grid-template-columns: 290px 1fr 320px;
+        }
+      }
+      @media (max-width: 980px) {
+        body {
+          overflow: auto;
+        }
+        .app {
+          height: auto;
+          grid-template-columns: 1fr;
+          grid-auto-rows: minmax(240px, auto);
+          overflow: visible;
+        }
+        .panel {
+          min-height: 280px;
+        }
+        .center {
+          min-height: 720px;
+        }
+        .stage {
+          inset: 70px 12px 72px 12px;
+        }
+        .mid {
+          position: relative;
+          inset: auto;
+          margin: 12px;
+        }
+        .mid-row2,
+        .mid-row3 {
+          grid-template-columns: 1fr;
+        }
+        .mid-row1 {
+          flex-direction: column;
+        }
+        .map {
+          width: 100%;
+          min-width: 0;
+        }
+        .dpeWrap {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="app">
+      <!-- LEFT -->
+      <aside class="panel left">
+        <div class="hdr">
+          <strong>Fonctions</strong>
+          <button class="btn-icon" title="Menu">☰</button>
+        </div>
+
+        <div class="tabs">
+          <div class="tab active" data-tab="classes">Classes</div>
+          <div class="tab" data-tab="outliners">Outliners</div>
+          <div class="tab" data-tab="functions">Functions</div>
+        </div>
+
+        <div class="search">
+          <input id="searchLeft" placeholder="Search..." />
+        </div>
+
+        <div class="menu" id="leftMenu">
+          <h4>Bâtiment</h4>
+          <div class="item" onclick="goInfosBatiment()">
+            <div class="ico">ℹ️</div>
+            <div class="txt">
+              <div><b>Infos bâtiment</b></div>
+            </div>
+            <span id="okIdentity" class="bad">—</span>
+          </div>
+          <div class="item">
+            <div class="ico">📄</div>
+            <div class="txt">
+              <div><b>Contrat</b></div>
+            </div>
+          </div>
+          <div class="item">
+            <div class="ico">🧰</div>
+            <div class="txt">
+              <div><b>Liste des équipements</b></div>
+            </div>
+          </div>
+          <div class="item">
+            <div class="ico">📦</div>
+            <div class="txt">
+              <div><b>Stock</b></div>
+            </div>
+          </div>
+
+          <h4>Énergies</h4>
+          <div class="item" onclick="goPlanComptage()">
+            <div class="ico">🗺️</div>
+            <div class="txt">
+              <div><b>Plans de comptage</b></div>
+            </div>
+            <span id="okPlan" class="bad">—</span>
+          </div>
+          <div class="item" onclick="goCompteurs()">
+            <div class="ico">🔢</div>
+            <div class="txt">
+              <div><b>Compteurs</b></div>
+            </div>
+            <span id="okReleves" class="bad">—</span>
+          </div>
+          <div class="item" onclick="goAnalyseEnergie()">
+            <div class="ico">📊</div>
+            <div class="txt">
+              <div><b>Analyse énergétique</b></div>
+            </div>
+            <span id="okAnalyse" class="bad">—</span>
+          </div>
+          <div class="item" onclick="goEmpreinteCarbone()">
+            <div class="ico">🌍</div>
+            <div class="txt">
+              <div><b>Empreinte carbone</b></div>
+            </div>
+            <span id="okCarbon" class="bad">—</span>
+          </div>
+          <div class="item" onclick="goTempsReel()">
+            <div class="ico">⚡</div>
+            <div class="txt">
+              <div><b>Compteurs temps réel</b></div>
+            </div>
+            <span id="okRealtime" class="ok">OK</span>
+          </div>
+        </div>
+
+        <div class="bottom">
+          <div class="pill"><span class="dot"></span> Connecté</div>
+          <div class="pill">Auto</div>
+        </div>
+      </aside>
+
+      <!-- CENTER -->
+      <main class="panel center">
+        <div class="topbar">
+          <div class="tb-left">
+            <div class="chip"><strong id="siteName">—</strong></div>
+            <div class="chip" id="siteCity">—</div>
+            <div class="chip" id="siteSurface">—</div>
+            <div class="chip" id="siteEnergies">—</div>
+            <div class="chip">
+              <span class="dot"></span><span class="tb-title">France</span>
+            </div>
+            <div class="chip">Site</div>
+            <div class="chip" id="chipCity">—</div>
+            <div class="chip">Bâtiment tertiaire</div>
+            <div
+              class="chip"
+              id="identityStatusChip"
+              style="
+                border-color: rgba(255, 255, 255, 0.1);
+                background: rgba(0, 0, 0, 0.14);
+              "
+            >
+              ⚠️ Identité non chargée
+            </div>
+          </div>
+          <div class="tb-right">
+            <div class="chip">Invite <b>16</b></div>
+            <button class="btn-icon" title="Notifications">🔔</button>
+            <button class="btn-icon" title="Paramètres">⚙️</button>
+            <button class="btn-icon" title="Profil">👤</button>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="grid"></div>
+
+          <div class="mid">
+            <div class="mid-row1">
+              <div class="card2 map">
+                <div class="ttl">
+                  <b>Carte — localisation du bâtiment</b>
+                  <small id="addrTxt">Adresse: —</small>
+                </div>
+
+                <div class="mapbox" id="mapBox">
+                  <svg
+                    viewBox="0 0 320 200"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-label="Carte de France stylisée"
+                  >
+                    <defs>
+                      <linearGradient id="sea" x1="0" x2="1">
+                        <stop offset="0" stop-color="rgba(0,212,255,.08)" />
+                        <stop offset="1" stop-color="rgba(46,229,157,.06)" />
+                      </linearGradient>
+                      <linearGradient id="land" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0" stop-color="rgba(255,255,255,.10)" />
+                        <stop offset="1" stop-color="rgba(255,255,255,.04)" />
+                      </linearGradient>
+                    </defs>
+                    <rect
+                      x="0"
+                      y="0"
+                      width="320"
+                      height="200"
+                      fill="url(#sea)"
+                    />
+                    <path
+                      d="M133 22 L168 28 L188 46 L214 53 L232 76 L220 104 L226 126 L206 153 L176 170 L144 165 L126 146 L104 132 L92 110 L96 85 L84 64 L92 42 L110 30 Z"
+                      fill="url(#land)"
+                      stroke="rgba(0,212,255,.28)"
+                      stroke-width="2"
+                    />
+                    <g opacity=".35">
+                      <circle
+                        cx="40"
+                        cy="40"
+                        r="1.2"
+                        fill="rgba(255,255,255,.6)"
+                      />
+                      <circle
+                        cx="80"
+                        cy="80"
+                        r="1.2"
+                        fill="rgba(255,255,255,.6)"
+                      />
+                      <circle
+                        cx="260"
+                        cy="60"
+                        r="1.2"
+                        fill="rgba(255,255,255,.6)"
+                      />
+                      <circle
+                        cx="280"
+                        cy="140"
+                        r="1.2"
+                        fill="rgba(255,255,255,.6)"
+                      />
+                      <circle
+                        cx="60"
+                        cy="150"
+                        r="1.2"
+                        fill="rgba(255,255,255,.6)"
+                      />
+                    </g>
+                  </svg>
+                  <div class="pin" id="pin"></div>
+                </div>
+
+                <div class="mapmeta">
+                  <div class="tag">
+                    <i></i><span>Lat/Lon</span
+                    ><b id="latlonTxt" style="margin-left: 6px">—</b>
+                  </div>
+                  <div class="tag">
+                    <i id="classDot" style="background: var(--green)"></i
+                    ><span>Classe</span
+                    ><b id="classTxt" style="margin-left: 6px">—</b>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card2" style="flex: 1; min-width: 0">
+                <div class="ttl">
+                  <b>Consommations primaires</b>
+                  <small id="periodTxt">Période: 12 mois glissants</small>
+                </div>
+
+                <div class="pieWrap">
+                  <div class="pie" id="pie"></div>
+                  <div class="pieCenter">
+                    <div>
+                      <b id="pieTotal">—</b> <span id="pieUnit">MWh total</span>
+                    </div>
+                  </div>
+                  <div class="pieLegend" id="pieLegend"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mid-row2">
+              <div class="card2">
+                <div class="ttl">
+                  <b>Indicateurs clés</b> <small>Global bâtiment</small>
+                </div>
+
+                <div class="gRow">
+                  <div class="gMini">
+                    <div class="ring" id="ringCarbon"></div>
+                    <div class="gTxt">
+                      <b>Empreinte carbone</b> <span>kgCO₂e / m²</span>
+                      <div class="v" id="vCarbon">—</div>
+                    </div>
+                  </div>
+
+                  <div class="gMini">
+                    <div class="ring" id="ringConso"></div>
+                    <div class="gTxt">
+                      <b>Conso globale</b> <span>MWh (période)</span>
+                      <div class="v" id="vConso">—</div>
+                    </div>
+                  </div>
+
+                  <div class="gMini">
+                    <div class="ring" id="ringEco"></div>
+                    <div class="gTxt">
+                      <b>Économies énergie</b> <span>vs N-1</span>
+                      <div class="v" id="vEco">—</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  style="
+                    margin-top: 10px;
+                    display: flex;
+                    gap: 10px;
+                    flex-wrap: wrap;
+                  "
+                >
+                  <div class="tag">
+                    <i
+                      style="
+                        background: var(--orange);
+                        box-shadow: 0 0 12px rgba(255, 184, 77, 0.45);
+                      "
+                    ></i
+                    ><span>Surface</span
+                    ><b style="margin-left: 6px" id="surfTxt">—</b>
+                  </div>
+                  <div class="tag">
+                    <i
+                      style="
+                        background: var(--cyan2);
+                        box-shadow: 0 0 12px rgba(42, 166, 255, 0.55);
+                      "
+                    ></i
+                    ><span>Lots</span
+                    ><b style="margin-left: 6px" id="lotsTxt">—</b>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card2">
+                <div class="ttl">
+                  <b>Commentaire / Synthèse</b> <small>Auto</small>
+                </div>
+                <div
+                  style="
+                    font-size: 12px;
+                    color: rgba(159, 182, 199, 0.92);
+                    line-height: 1.45;
+                  "
+                >
+                  • Les consommations sont dominées par
+                  <b style="color: rgba(215, 242, 255, 0.95)" id="topEnergy"
+                    >—</b
+                  >.<br />
+                  • Évolution globale vs N-1 :
+                  <b id="ecoTxt" style="color: var(--green)">—</b>.<br />
+                  • Lots les plus consommateurs :
+                  <b style="color: rgba(215, 242, 255, 0.95)" id="topLots"
+                    >CVC, Éclairage</b
+                  >.<br /><br />
+                  <span style="opacity: 0.9"
+                    >👉 Remplis les onglets (identité, plan, compteurs, carbone)
+                    : le dashboard se met à jour automatiquement.</span
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div class="mid-row3">
+              <div class="card2">
+                <div class="ttl">
+                  <b>Consommations par lot</b>
+                  <small>MWh — ventilation / CVC / éclairage / IT…</small>
+                </div>
+                <div class="hist" id="hist"></div>
+                <div
+                  style="
+                    display: flex;
+                    gap: 10px;
+                    flex-wrap: wrap;
+                    margin-top: 10px;
+                  "
+                >
+                  <div class="tag">
+                    <i
+                      style="
+                        background: var(--cyan);
+                        box-shadow: 0 0 12px rgba(0, 212, 255, 0.55);
+                      "
+                    ></i
+                    ><span>Lot max</span
+                    ><b style="margin-left: 6px" id="lotMaxTxt">—</b>
+                  </div>
+                  <div class="tag">
+                    <i
+                      style="
+                        background: var(--green);
+                        box-shadow: 0 0 12px rgba(46, 229, 157, 0.55);
+                      "
+                    ></i
+                    ><span>Priorité</span
+                    ><b style="margin-left: 6px">Optimisation</b>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card2">
+                <div class="ttl">
+                  <b>Chat IA</b> <small>Assistant exploitation</small>
+                </div>
+                <div class="chat">
+                  <div class="chatBox" id="chatBox">
+                    <div class="msg ai">
+                      Salut 👋 Je peux t’aider à analyser les conso, détecter
+                      les dérives, et proposer des actions (CVC, éclairage, IT).
+                      <br /><br />Exemples :<br />• “Pourquoi la conso CVC
+                      augmente ?”<br />• “Propose 3 actions pour baisser de 10%”
+                    </div>
+                  </div>
+                  <div class="chatInp">
+                    <input id="chatInput" placeholder="Écris ta question..." />
+                    <button class="send" id="sendBtn">Envoyer</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bottom-bar">
+          <div class="control-group">
+            <div class="seg">
+              <button class="active">Auto</button><button>Off</button>
+            </div>
+            <div class="seg">
+              <button class="active">Dashboard</button><button>2D</button>
+            </div>
+          </div>
+          <div class="control-group">
+            <div class="chip" id="chipLat">—</div>
+            <div class="chip" id="chipLon">—</div>
+            <button class="btn-icon" title="Localiser">📍</button>
+          </div>
+        </div>
+      </main>
+
+      <!-- RIGHT -->
+      <aside class="panel right">
+        <div class="hdr">
+          <strong>Dashboard</strong>
+          <div style="display: flex; gap: 8px; align-items: center">
+            <div class="chip">Today</div>
+            <button class="btn-icon" title="Options">⋮</button>
+          </div>
+        </div>
+
+        <div class="content">
+          <div class="card">
+            <h3>DPE — Classe du bâtiment</h3>
+            <div class="sub">
+              Affichage style DPE. La lettre active est synchronisée avec les
+              données enregistrées dans l’onglet <b>Infos bâtiment</b> (si
+              renseigné).
+            </div>
+
+            <div class="dpeWrap">
+              <div class="dpeBox">
+                <div class="k">
+                  <b>Consommation d’énergie</b><span>kWh/m²/an</span>
+                </div>
+
+                <svg
+                  class="dpeSvg"
+                  viewBox="0 0 340 220"
+                  xmlns="http://www.w3.org/2000/svg"
+                  role="img"
+                  aria-label="DPE énergie"
+                >
+                  <defs>
+                    <filter
+                      id="sh"
+                      x="-20%"
+                      y="-20%"
+                      width="140%"
+                      height="140%"
+                    >
+                      <feDropShadow
+                        dx="0"
+                        dy="6"
+                        stdDeviation="6"
+                        flood-color="rgba(0,0,0,.45)"
+                      />
+                    </filter>
+                  </defs>
+
+                  <rect
+                    x="10"
+                    y="10"
+                    width="320"
+                    height="200"
+                    rx="16"
+                    fill="rgba(0,0,0,.14)"
+                    stroke="rgba(255,255,255,.10)"
+                  />
+                  <text
+                    x="24"
+                    y="38"
+                    fill="rgba(215,242,255,.92)"
+                    font-size="13"
+                    font-weight="800"
+                  >
+                    ÉNERGIE
+                  </text>
+
+                  <g transform="translate(24,54)" filter="url(#sh)">
+                    <path
+                      d="M0 0 L210 0 L190 22 L0 22 Z"
+                      fill="#0fbf71"
+                      opacity=".95"
+                    />
+                    <text
+                      x="10"
+                      y="16"
+                      font-size="13"
+                      font-weight="900"
+                      fill="#06110c"
+                    >
+                      A
+                    </text>
+                    <path
+                      d="M0 26 L230 26 L210 48 L0 48 Z"
+                      fill="#44d27a"
+                      opacity=".95"
+                    />
+                    <text
+                      x="10"
+                      y="42"
+                      font-size="13"
+                      font-weight="900"
+                      fill="#06110c"
+                    >
+                      B
+                    </text>
+                    <path
+                      d="M0 52 L250 52 L230 74 L0 74 Z"
+                      fill="#cfe84e"
+                      opacity=".95"
+                    />
+                    <text
+                      x="10"
+                      y="68"
+                      font-size="13"
+                      font-weight="900"
+                      fill="#161a06"
+                    >
+                      C
+                    </text>
+                    <path
+                      d="M0 78 L270 78 L250 100 L0 100 Z"
+                      fill="#ffd24a"
+                      opacity=".95"
+                    />
+                    <text
+                      x="10"
+                      y="94"
+                      font-size="13"
+                      font-weight="900"
+                      fill="#201606"
+                    >
+                      D
+                    </text>
+                    <path
+                      d="M0 104 L290 104 L270 126 L0 126 Z"
+                      fill="#ff9a40"
+                      opacity=".95"
+                    />
+                    <text
+                      x="10"
+                      y="120"
+                      font-size="13"
+                      font-weight="900"
+                      fill="#241106"
+                    >
+                      E
+                    </text>
+                    <path
+                      d="M0 130 L305 130 L285 152 L0 152 Z"
+                      fill="#ff6a4b"
+                      opacity=".95"
+                    />
+                    <text
+                      x="10"
+                      y="146"
+                      font-size="13"
+                      font-weight="900"
+                      fill="#240909"
+                    >
+                      F
+                    </text>
+                    <path
+                      d="M0 156 L320 156 L300 178 L0 178 Z"
+                      fill="#ff3d6e"
+                      opacity=".95"
+                    />
+                    <text
+                      x="10"
+                      y="172"
+                      font-size="13"
+                      font-weight="900"
+                      fill="#240909"
+                    >
+                      G
+                    </text>
+
+                    <g id="dpeE_pointer" transform="translate(0,26)">
+                      <path
+                        d="M322 2 L336 11 L322 20 Z"
+                        fill="rgba(215,242,255,.95)"
+                      />
+                      <rect
+                        x="0"
+                        y="0"
+                        width="230"
+                        height="22"
+                        rx="10"
+                        fill="none"
+                        stroke="rgba(215,242,255,.95)"
+                        stroke-width="2"
+                      />
+                    </g>
+                  </g>
+                </svg>
+
+                <div class="dpeNote">
+                  <span class="dpePill"
+                    ><span class="dpeBadge" id="dpeEnergyBadge">—</span
+                    ><span><b id="dpeEnergyVal">—</b> kWh/m²/an</span></span
+                  >
+                </div>
+              </div>
+
+              <div class="dpeBox">
+                <div class="k">
+                  <b>Émissions de gaz à effet de serre</b
+                  ><span>kgCO₂/m²/an</span>
+                </div>
+
+                <svg
+                  class="dpeSvg"
+                  viewBox="0 0 340 220"
+                  xmlns="http://www.w3.org/2000/svg"
+                  role="img"
+                  aria-label="DPE GES"
+                >
+                  <defs>
+                    <filter
+                      id="sh2"
+                      x="-20%"
+                      y="-20%"
+                      width="140%"
+                      height="140%"
+                    >
+                      <feDropShadow
+                        dx="0"
+                        dy="6"
+                        stdDeviation="6"
+                        flood-color="rgba(0,0,0,.45)"
+                      />
+                    </filter>
+                  </defs>
+
+                  <rect
+                    x="10"
+                    y="10"
+                    width="320"
+                    height="200"
+                    rx="16"
+                    fill="rgba(0,0,0,.14)"
+                    stroke="rgba(255,255,255,.10)"
+                  />
+                  <text
+                    x="24"
+                    y="38"
+                    fill="rgba(215,242,255,.92)"
+                    font-size="13"
+                    font-weight="800"
+                  >
+                    GES
+                  </text>
+
+                  <g transform="translate(24,54)" filter="url(#sh2)">
+                    <path
+                      d="M0 0 L210 0 L190 22 L0 22 Z"
+                      fill="#0fbf71"
+                      opacity=".95"
+                    />
+                    <text
+                      x="10"
+                      y="16"
+                      font-size="13"
+                      font-weight="900"
+                      fill="#06110c"
+                    >
+                      A
+                    </text>
+                    <path
+                      d="M0 26 L230 26 L210 48 L0 48 Z"
+                      fill="#44d27a"
+                      opacity=".95"
+                    />
+                    <text
+                      x="10"
+                      y="42"
+                      font-size="13"
+                      font-weight="900"
+                      fill="#06110c"
+                    >
+                      B
+                    </text>
+                    <path
+                      d="M0 52 L250 52 L230 74 L0 74 Z"
+                      fill="#cfe84e"
+                      opacity=".95"
+                    />
+                    <text
+                      x="10"
+                      y="68"
+                      font-size="13"
+                      font-weight="900"
+                      fill="#161a06"
+                    >
+                      C
+                    </text>
+                    <path
+                      d="M0 78 L270 78 L250 100 L0 100 Z"
+                      fill="#ffd24a"
+                      opacity=".95"
+                    />
+                    <text
+                      x="10"
+                      y="94"
+                      font-size="13"
+                      font-weight="900"
+                      fill="#201606"
+                    >
+                      D
+                    </text>
+                    <path
+                      d="M0 104 L290 104 L270 126 L0 126 Z"
+                      fill="#ff9a40"
+                      opacity=".95"
+                    />
+                    <text
+                      x="10"
+                      y="120"
+                      font-size="13"
+                      font-weight="900"
+                      fill="#241106"
+                    >
+                      E
+                    </text>
+                    <path
+                      d="M0 130 L305 130 L285 152 L0 152 Z"
+                      fill="#ff6a4b"
+                      opacity=".95"
+                    />
+                    <text
+                      x="10"
+                      y="146"
+                      font-size="13"
+                      font-weight="900"
+                      fill="#240909"
+                    >
+                      F
+                    </text>
+                    <path
+                      d="M0 156 L320 156 L300 178 L0 178 Z"
+                      fill="#ff3d6e"
+                      opacity=".95"
+                    />
+                    <text
+                      x="10"
+                      y="172"
+                      font-size="13"
+                      font-weight="900"
+                      fill="#240909"
+                    >
+                      G
+                    </text>
+
+                    <g id="dpeG_pointer" transform="translate(0,52)">
+                      <path
+                        d="M322 2 L336 11 L322 20 Z"
+                        fill="rgba(215,242,255,.95)"
+                      />
+                      <rect
+                        x="0"
+                        y="0"
+                        width="250"
+                        height="22"
+                        rx="10"
+                        fill="none"
+                        stroke="rgba(215,242,255,.95)"
+                        stroke-width="2"
+                      />
+                    </g>
+                  </g>
+                </svg>
+
+                <div class="dpeNote">
+                  <span class="dpePill"
+                    ><span class="dpeBadge" id="dpeGesBadge">—</span
+                    ><span><b id="dpeGesVal">—</b> kgCO₂/m²/an</span></span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>DJU / DJF — Année (mensuel)</h3>
+            <div class="sub">
+              Tableau maquette (à remplacer ensuite par tes vraies valeurs
+              météo).
+            </div>
+            <table class="climTable" id="climTable">
+              <thead>
+                <tr>
+                  <th>Mois</th>
+                  <th class="num">DJU</th>
+                  <th class="num">DJF</th>
+                </tr>
+              </thead>
+              <tbody id="climBody"></tbody>
+            </table>
+          </div>
+
+          <div class="card">
+            <h3>AI insights</h3>
+            <div class="sub">
+              Ce panneau regroupe des indicateurs clés (maquette) : énergie,
+              occupation, alertes et santé globale.
+            </div>
+
+            <div class="kpis">
+              <div class="kpi">
+                <div class="label">
+                  <span class="badge-dot"></span> Compteurs
+                </div>
+                <div class="val" id="kpiBuildings">—</div>
+                <div class="delta" id="kpiBuildingsDelta">—</div>
+              </div>
+              <div class="kpi">
+                <div class="label">
+                  <span
+                    class="badge-dot"
+                    style="
+                      background: var(--green);
+                      box-shadow: 0 0 12px rgba(46, 229, 157, 0.55);
+                    "
+                  ></span>
+                  Occupation
+                </div>
+                <div class="val" id="kpiOcc">1,450</div>
+                <div class="delta">Stable</div>
+              </div>
+              <div class="kpi">
+                <div class="label">
+                  <span
+                    class="badge-dot"
+                    style="
+                      background: var(--cyan);
+                      box-shadow: 0 0 12px rgba(0, 212, 255, 0.55);
+                    "
+                  ></span>
+                  Énergie
+                </div>
+                <div class="val">
+                  <span id="kpiEnergy">—</span>
+                  <span
+                    style="font-size: 12px; color: rgba(159, 182, 199, 0.95)"
+                    >kWh</span
+                  >
+                </div>
+                <div class="delta" id="kpiEnergyDelta">—</div>
+              </div>
+              <div class="kpi">
+                <div class="label">
+                  <span
+                    class="badge-dot"
+                    style="
+                      background: var(--red);
+                      box-shadow: 0 0 12px rgba(255, 92, 122, 0.55);
+                    "
+                  ></span>
+                  Alertes
+                </div>
+                <div class="val" id="kpiIssues">10</div>
+                <div class="delta">+3% (7 jours)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <script>
+      /* =========================================================
+         ENERGISME — Dashboard
+         ✅ Le dashboard se met à jour depuis les onglets annexes via localStorage.
+
+         Sources utilisées :
+         - Infos bâtiment : ENERGISME_IDENTITY (v1)  + compat: energisme_site_identity_v1
+         - Plan comptage  : energisme_plan_comptage
+         - Relevés index  : energisme_releves
+      ========================================================= */
+
+      // --- localStorage keys ---
+      const KEY_IDENTITY_V1 = "ENERGISME_IDENTITY";
+      const KEY_IDENTITY_COMPAT = "energisme_site_identity_v1"; // utilisé par empreinte_carbone.html
+      const KEY_PLAN = "energisme_plan_comptage";
+      const KEY_RELEVES = "energisme_releves";
+
+      // -----------------------------
+      // Utils
+      // -----------------------------
+      const $ = (id) => document.getElementById(id);
+
+      function loadJSON(key) {
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        try {
+          return JSON.parse(raw);
+        } catch (e) {
+          console.warn("JSON invalide", key, e);
+          return null;
+        }
+      }
+
+      function safeNum(x) {
+        if (x === null || x === undefined) return null;
+        if (typeof x === "number" && Number.isFinite(x)) return x;
+        if (typeof x !== "string") return null;
+        const v = Number(String(x).replace(/\s/g, "").replace(",", "."));
+        return Number.isFinite(v) ? v : null;
+      }
+
+      function fmt(n, digits = 1) {
+        if (n === null || n === undefined || !Number.isFinite(n)) return "—";
+        return n.toLocaleString("fr-FR", {
+          minimumFractionDigits: digits,
+          maximumFractionDigits: digits,
+        });
+      }
+
+      function monthKey(year, mm) {
+        return `${year}-${String(mm).padStart(2, "0")}`;
+      }
+
+      function parseYearMonthKey(k) {
+        const m = /^\s*(\d{4})-(\d{2})\s*$/.exec(String(k));
+        if (!m) return null;
+        const y = Number(m[1]);
+        const mo = Number(m[2]);
+        if (!Number.isFinite(y) || !Number.isFinite(mo) || mo < 1 || mo > 12)
+          return null;
+        return { y, mo };
+      }
+
+      function compareYM(a, b) {
+        if (a.y !== b.y) return a.y - b.y;
+        return a.mo - b.mo;
+      }
+
+      function ymToDate(ym) {
+        return new Date(ym.y, ym.mo - 1, 1);
+      }
+
+      function addMonths(ym, delta) {
+        const d = ymToDate(ym);
+        d.setMonth(d.getMonth() + delta);
+        return { y: d.getFullYear(), mo: d.getMonth() + 1 };
+      }
+
+      // -----------------------------
+      // Identity normalization
+      // -----------------------------
+      function normalizeIdentity() {
+        const a = loadJSON(KEY_IDENTITY_V1); // {identite, energies, dpe, coords, ...}
+        const b = loadJSON(KEY_IDENTITY_COMPAT); // {site:{...}, settings:{co2_factors_kwh:{...}}}
+
+        const out = {
+          name: "—",
+          address: "—",
+          city: "—",
+          surface_m2: null,
+          lat: 48.8566,
+          lon: 2.3522,
+          energies: [],
+          classLetter: "—",
+          dpe_energy_letter: "B",
+          dpe_energy_kwh_m2_an: 112,
+          dpe_ges_letter: "C",
+          dpe_ges_kgco2_m2_an: 18,
+          co2_factors_kwh: {
+            elec: 0.055, // valeurs par défaut (ordre de grandeur)
+            gas: 0.227,
+            heat: 0.1,
+            cold: 0.06,
+            water: 0.0,
+            air: 0.0,
+            pv: 0.0,
+            gen: 0.7,
+          },
+        };
+
+        // A) identity v1
+        if (a && a.identite) {
+          const id = a.identite || {};
+          out.name = id.name || out.name;
+          out.city = id.city || out.city;
+          const addr = [id.address, id.address2].filter(Boolean).join(" — ");
+          out.address = addr || out.address;
+          out.surface_m2 = safeNum(id.surface) ?? out.surface_m2;
+
+          if (a.coords) {
+            out.lat = safeNum(a.coords.lat) ?? out.lat;
+            out.lon = safeNum(a.coords.lon) ?? out.lon;
+          }
+
+          // energies -> chips
+          const e = a.energies || {};
+          const labels = [];
+          if (e.elec === "Oui") labels.push("⚡ Élec");
+          if (e.water === "Oui") labels.push("💧 Eau");
+          if (e.gas === "Oui") labels.push("🔥 Gaz");
+          if (e.heat === "Oui") labels.push("♨️ Chaleur");
+          if (e.cold === "Oui") labels.push("❄️ Froid");
+          if (e.air === "Oui") labels.push("🌀 Air");
+          if (e.pv === "Oui") labels.push("☀️ PV");
+          if (e.gen === "Oui") labels.push("🔌 GE");
+          out.energies = labels;
+
+          // dpe
+          const d = a.dpe || {};
+          if (d.energie_classe)
+            out.dpe_energy_letter = String(d.energie_classe).toUpperCase();
+          if (d.energie_kwh_m2_an != null)
+            out.dpe_energy_kwh_m2_an =
+              safeNum(d.energie_kwh_m2_an) ?? out.dpe_energy_kwh_m2_an;
+          if (d.ges_classe)
+            out.dpe_ges_letter = String(d.ges_classe).toUpperCase();
+          if (d.ges_kgco2_m2_an != null)
+            out.dpe_ges_kgco2_m2_an =
+              safeNum(d.ges_kgco2_m2_an) ?? out.dpe_ges_kgco2_m2_an;
+
+          // classe (affichée dans la carte)
+          out.classLetter = out.dpe_energy_letter || out.classLetter;
+
+          // facteurs CO2 optionnels
+          if (a.co2_factors_kwh && typeof a.co2_factors_kwh === "object") {
+            out.co2_factors_kwh = {
+              ...out.co2_factors_kwh,
+              ...a.co2_factors_kwh,
+            };
+          }
+        }
+
+        // B) compat identity (empreinte_carbone)
+        if (b && b.site) {
+          out.name = b.site.name || out.name;
+          out.city = b.site.city || out.city;
+          out.address = b.site.address || out.address;
+          out.surface_m2 = safeNum(b.site.surface_m2) ?? out.surface_m2;
+          out.lat = safeNum(b.site.lat) ?? out.lat;
+          out.lon = safeNum(b.site.lon) ?? out.lon;
+        }
+        if (b && b.settings && b.settings.co2_factors_kwh) {
+          out.co2_factors_kwh = {
+            ...out.co2_factors_kwh,
+            ...b.settings.co2_factors_kwh,
+          };
+        }
+
+        return out;
+      }
+
+      function setIdentityStatus(ok, label) {
+        const chip = $("identityStatusChip");
+        if (!chip) return;
+        chip.textContent =
+          label || (ok ? "✅ Identité appliquée" : "⚠️ Identité non chargée");
+        chip.style.borderColor = ok
+          ? "rgba(46,229,157,.35)"
+          : "rgba(255,92,122,.35)";
+        chip.style.boxShadow = ok
+          ? "0 0 0 4px rgba(46,229,157,.08)"
+          : "0 0 0 4px rgba(255,92,122,.08)";
+        chip.style.color = "rgba(215,242,255,0.95)";
+      }
+
+      // -----------------------------
+      // Plan / Releves → conso
+      // -----------------------------
+      function loadPlan() {
+        const plan = loadJSON(KEY_PLAN);
+        if (!plan || !Array.isArray(plan.nodes)) return null;
+        return plan;
+      }
+
+      function loadReleves() {
+        const r = loadJSON(KEY_RELEVES);
+        if (!r || typeof r !== "object") return null;
+        return r;
+      }
+
+      function buildTree(nodes) {
+        const byId = new Map();
+        const children = new Map();
+        const parentOf = new Map();
+
+        nodes.forEach((n) => {
+          if (!n || !n.id) return;
+          byId.set(n.id, n);
+          if (!children.has(n.id)) children.set(n.id, []);
+        });
+        nodes.forEach((n) => {
+          const p = String(n?.parent || "").trim();
+          if (p && byId.has(p)) {
+            parentOf.set(n.id, p);
+            if (!children.has(p)) children.set(p, []);
+            children.get(p).push(n.id);
+          }
+        });
+        for (const [pid, arr] of children.entries()) {
+          arr.sort((a, b) => {
+            const na = String(byId.get(a)?.nom || a).toLowerCase();
+            const nb = String(byId.get(b)?.nom || b).toLowerCase();
+            return na.localeCompare(nb);
+          });
+        }
+        const roots = nodes
+          .filter((n) => n?.id && !parentOf.has(n.id))
+          .map((n) => n.id)
+          .sort((a, b) =>
+            String(byId.get(a)?.nom || a).localeCompare(
+              String(byId.get(b)?.nom || b)
+            )
+          );
+
+        return { byId, children, parentOf, roots };
+      }
+
+      function getIndex(releves, year, mm, id) {
+        return releves?.[year]?.[mm]?.[id] ?? null;
+      }
+
+      function computeMonthlyConsoFromIndex(releves, year, id) {
+        const out = Array(12).fill(null);
+        for (let m = 1; m <= 12; m++) {
+          const mm = String(m).padStart(2, "0");
+          const cur = safeNum(getIndex(releves, year, mm, id));
+          if (cur == null) continue;
+
+          let prev = null;
+          if (m === 1) prev = safeNum(getIndex(releves, year - 1, "12", id));
+          else
+            prev = safeNum(
+              getIndex(releves, year, String(m - 1).padStart(2, "0"), id)
+            );
+
+          if (prev == null) continue;
+          const d = cur - prev;
+          out[m - 1] = Number.isFinite(d) && d >= 0 ? d : null;
+        }
+        return out;
+      }
+
+      const consoMemo = new Map();
+      function computeMonthlyConsoSmart(releves, year, id, tree, stack = []) {
+        const key = `${year}|${id}`;
+        if (consoMemo.has(key)) return consoMemo.get(key);
+        if (stack.includes(id)) {
+          const out = Array(12).fill(null);
+          consoMemo.set(key, out);
+          return out;
+        }
+
+        const byIndex = computeMonthlyConsoFromIndex(releves, year, id);
+        const idxCount = byIndex.filter((v) => Number.isFinite(v)).length;
+
+        const kids = tree.children.get(id) || [];
+        if (!kids.length) {
+          consoMemo.set(key, byIndex);
+          return byIndex;
+        }
+
+        const childSeries = kids.map((cid) =>
+          computeMonthlyConsoSmart(releves, year, cid, tree, stack.concat(id))
+        );
+        const childSums = Array(12).fill(null);
+        for (let i = 0; i < 12; i++) {
+          let has = false;
+          let s = 0;
+          for (const series of childSeries) {
+            const v = series[i];
+            if (Number.isFinite(v)) {
+              s += v;
+              has = true;
+            }
+          }
+          childSums[i] = has ? s : null;
+        }
+
+        const out = Array(12).fill(null);
+        for (let i = 0; i < 12; i++) {
+          const a = byIndex[i];
+          const b = childSums[i];
+          if (Number.isFinite(a)) out[i] = a;
+          else if (Number.isFinite(b)) out[i] = b;
+          else out[i] = null;
+        }
+
+        if (idxCount < 2) out._computedFromChildren = true;
+        consoMemo.set(key, out);
+        return out;
+      }
+
+      function listAllYMFromReleves(releves) {
+        const yms = [];
+        for (const yStr of Object.keys(releves || {})) {
+          const y = Number(yStr);
+          if (!Number.isFinite(y)) continue;
+          const months = releves[yStr] || {};
+          for (const mm of Object.keys(months)) {
+            const mo = Number(mm);
+            if (!Number.isFinite(mo)) continue;
+            // on ne retient le mois que s'il y a au moins un index
+            const obj = months[mm];
+            if (obj && typeof obj === "object" && Object.keys(obj).length) {
+              yms.push({ y, mo });
+            }
+          }
+        }
+        yms.sort(compareYM);
+        // dedupe
+        const out = [];
+        for (const ym of yms) {
+          const last = out[out.length - 1];
+          if (!last || last.y !== ym.y || last.mo !== ym.mo) out.push(ym);
+        }
+        return out;
+      }
+
+      function lastNMonths(latestYM, n) {
+        const out = [];
+        for (let i = n - 1; i >= 0; i--) out.push(addMonths(latestYM, -i));
+        return out;
+      }
+
+      function unitToKwhMultiplier(unit) {
+        const u = String(unit || "")
+          .trim()
+          .toLowerCase();
+        if (!u) return 1; // par défaut
+        if (u === "kwh") return 1;
+        if (u === "mwh") return 1000;
+        if (u === "wh") return 1 / 1000;
+        return null; // non énergie (m3, etc.)
+      }
+
+      function typeLabel(type) {
+        return energyMeta(type).label;
+      }
+      function typeSw(type) {
+        return energyMeta(type).sw;
+      }
+      function typeColorVar(type) {
+        return energyMeta(type).colorVar;
+      }
+
+      function normalizeEnergyType(raw) {
+        const s = String(raw || "")
+          .toLowerCase()
+          .trim()
+          .replace(/[éèêë]/g, "e")
+          .replace(/[àâ]/g, "a")
+          .replace(/[îï]/g, "i")
+          .replace(/[ôö]/g, "o")
+          .replace(/[ûü]/g, "u")
+          .replace(/[ç]/g, "c");
+        if (!s) return "other";
+
+        const isLiv = /livr|livraison|delivery|reseau|rcu|rfu/.test(s);
+        const isProd = /prod|production|local/.test(s);
+
+        if (/elec|electric|edf|kwh/.test(s)) return "elec";
+        if (/eau|water|m3|m³/.test(s)) return "water";
+        if (/gaz|gas|gnc|propane|butane/.test(s)) return "gas";
+        if (/fioul|fuel|gasoil|diesel/.test(s)) return "fuel";
+        if (/pv|photovolta|solaire/.test(s)) return "solar";
+
+        if (/ecs|eau chaude sanitaire|hot water/.test(s)) return "ecs";
+
+        if (/chaleur|chauff|heat|rcu/.test(s)) {
+          if (isProd) return "heat_prod";
+          if (isLiv) return "heat_livr";
+          return "heat";
+        }
+        if (/froid|cold|clim|rfu/.test(s)) {
+          if (isProd) return "cold_prod";
+          if (isLiv) return "cold_livr";
+          return "cold";
+        }
+
+        if (/air/.test(s)) return "air";
+        if (/groupe|gen|generator/.test(s)) return "gen";
+        return "other";
+      }
+
+      function energyMeta(key) {
+        const map = {
+          elec: { label: "Électricité", colorVar: "--cyan", sw: "e" },
+          gas: { label: "Gaz", colorVar: "--orange", sw: "g" },
+          fuel: { label: "Fioul", colorVar: "--red", sw: "f" },
+          heat: { label: "Chaleur", colorVar: "--cyan2", sw: "h" },
+          heat_livr: {
+            label: "Réseau chaleur (livraison)",
+            colorVar: "--cyan2",
+            sw: "h",
+          },
+          heat_prod: {
+            label: "Chaleur (production)",
+            colorVar: "--cyan2",
+            sw: "h",
+          },
+          cold: { label: "Froid", colorVar: "--green", sw: "c" },
+          cold_livr: {
+            label: "Réseau froid (livraison)",
+            colorVar: "--green",
+            sw: "c",
+          },
+          cold_prod: {
+            label: "Froid (production)",
+            colorVar: "--green",
+            sw: "c",
+          },
+          solar: { label: "Solaire / PV", colorVar: "--green", sw: "s" },
+          ecs: { label: "ECS", colorVar: "--orange", sw: "x" },
+          air: { label: "Air comprimé", colorVar: "--muted", sw: "a" },
+          gen: { label: "Groupes électrogènes", colorVar: "--red", sw: "n" },
+          water: { label: "Eau", colorVar: "--green", sw: "w" },
+          other: { label: "Autres", colorVar: "--muted", sw: "o" },
+        };
+        return map[key] || map.other;
+      }
+
+      function unitToKwhMultiplier(unit) {
+        const u = String(unit || "")
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, "");
+        if (!u) return 1;
+        if (u === "kwh") return 1;
+        if (u === "wh") return 0.001;
+        if (u === "mwh") return 1000;
+        if (u.includes("m3") || u.includes("m³") || u.includes("nm3"))
+          return null;
+        return 1;
+      }
+
+      function computeEnergyTotals(planTree, releves) {
+        const out = {
+          totalsByTypeKwh: {},
+          totalsByTypeRaw: {},
+          totalsWaterM3: 0,
+          totalKwh: 0,
+        };
+        if (!planTree || !Array.isArray(planTree.nodes) || !releves) return out;
+
+        const nodesById = {};
+        for (const n of planTree.nodes) {
+          if (n && n.id) nodesById[n.id] = n;
+        }
+
+        const meterIds = Object.keys(nodesById);
+
+        function getAllMonthsSorted() {
+          const months = [];
+          for (const y of Object.keys(releves || {})) {
+            const byMonth = releves[y] || {};
+            for (const m of Object.keys(byMonth || {})) {
+              const mm = String(m).padStart(2, "0");
+              months.push(`${y}-${mm}`);
+            }
+          }
+          return months.sort();
+        }
+        const allMonths = getAllMonthsSorted();
+        if (!allMonths.length) return out;
+        const last12 = allMonths.slice(-12);
+
+        function prevYM(ym) {
+          let [yy, mm] = ym.split("-").map(Number);
+          mm -= 1;
+          if (mm <= 0) {
+            mm = 12;
+            yy -= 1;
+          }
+          return `${yy}-${String(mm).padStart(2, "0")}`;
+        }
+
+        for (const id of meterIds) {
+          const node = nodesById[id] || {};
+          const energyKey = normalizeEnergyType(
+            node.energyType ||
+              node.energie ||
+              node.energy ||
+              node.typeEnergie ||
+              node.type ||
+              ""
+          );
+
+          const unit = node.unit || node.unite || node.unity || node.u || "";
+          const mult = unitToKwhMultiplier(unit);
+          const isWater = energyKey === "water" || mult === null;
+
+          // Collect indexes for last12 and prev month
+          const idxByMonth = {};
+          for (const ym of [...last12, prevYM(last12[0])]) {
+            const [yy, mm] = ym.split("-");
+            const v = releves?.[yy]?.[mm]?.[id];
+            if (v !== undefined && v !== null && v !== "") {
+              const num = Number(v);
+              if (Number.isFinite(num)) idxByMonth[ym] = num;
+            }
+          }
+
+          for (const ym of last12) {
+            const cur = idxByMonth[ym];
+            const prev = idxByMonth[prevYM(ym)];
+            if (cur === undefined || prev === undefined) continue;
+
+            const diff = cur - prev;
+            if (!Number.isFinite(diff) || diff < 0) continue;
+
+            if (isWater) {
+              out.totalsWaterM3 += diff;
+              continue;
+            }
+
+            const kwh = diff * (mult ?? 1);
+            if (!Number.isFinite(kwh) || kwh <= 0) continue;
+
+            out.totalKwh += kwh;
+            out.totalsByTypeKwh[energyKey] =
+              (out.totalsByTypeKwh[energyKey] || 0) + kwh;
+            out.totalsByTypeRaw[energyKey] =
+              (out.totalsByTypeRaw[energyKey] || 0) + diff;
+          }
+        }
+
+        return out;
+      }
+
+      function computeAutoDPE(identity, totalsByTypeKwh) {
+        const surface = Math.max(
+          1,
+          Number(
+            identity?.identite?.surface || identity?.site?.surface_m2 || 0
+          ) || 1
+        );
+
+        const factorsPrimary = {
+          elec: 2.3,
+          gas: 1.0,
+          fuel: 1.0,
+          heat: 1.0,
+          heat_livr: 1.0,
+          heat_prod: 1.0,
+          cold: 1.0,
+          cold_livr: 1.0,
+          cold_prod: 1.0,
+          solar: 0.0,
+          ecs: 1.0,
+          air: 1.0,
+          gen: 1.0,
+          other: 1.0,
+        };
+
+        const co2 =
+          identity?.empreinte && identity?.empreinte?.co2_factors_kwh
+            ? identity.empreinte.co2_factors_kwh
+            : {
+                elec: 0.05,
+                gas: 0.204,
+                fuel: 0.3,
+                heat: 0.15,
+                cold: 0.08,
+                solar: 0.0,
+                ecs: 0.204,
+                air: 0.05,
+                gen: 0.3,
+                other: 0.1,
+              };
+
+        let primaryKwh = 0;
+        let emissionsKg = 0;
+
+        for (const [k, v] of Object.entries(totalsByTypeKwh || {})) {
+          const dv = Number(v) || 0;
+          const base = k.startsWith("heat")
+            ? "heat"
+            : k.startsWith("cold")
+            ? "cold"
+            : k in factorsPrimary
+            ? k
+            : "other";
+          primaryKwh += dv * (factorsPrimary[k] ?? factorsPrimary[base] ?? 1);
+          const ef = co2[k] ?? co2[base] ?? 0.1;
+          emissionsKg += dv * ef;
+        }
+
+        const kwh_m2_an = primaryKwh / surface;
+        const ges_kgco2_m2_an = emissionsKg / surface;
+
+        function letterEnergy(x) {
+          if (x <= 70) return "A";
+          if (x <= 110) return "B";
+          if (x <= 180) return "C";
+          if (x <= 250) return "D";
+          if (x <= 330) return "E";
+          if (x <= 420) return "F";
+          return "G";
+        }
+        function letterGes(x) {
+          if (x <= 6) return "A";
+          if (x <= 11) return "B";
+          if (x <= 30) return "C";
+          if (x <= 50) return "D";
+          if (x <= 70) return "E";
+          if (x <= 100) return "F";
+          return "G";
+        }
+
+        return {
+          dpe_energy_letter: letterEnergy(kwh_m2_an),
+          dpe_energy_kwh_m2_an: Math.round(kwh_m2_an),
+          dpe_ges_letter: letterGes(ges_kgco2_m2_an),
+          dpe_ges_kgco2_m2_an: Math.round(ges_kgco2_m2_an),
+        };
+      }
+
+      function renderPie(primaryItems) {
+        const pie = $("pie");
+        const pieLegend = $("pieLegend");
+
+        if (!primaryItems || !primaryItems.length) {
+          $("pieTotal").textContent = "—";
+          $("pieUnit").textContent = "MWh total";
+          pie.style.background = `conic-gradient(rgba(255,255,255,.08) 0 100%)`;
+          pieLegend.innerHTML = `<div class="leg2"><span>Aucune donnée de conso</span><span>—</span></div>`;
+          $("topEnergy").textContent = "—";
+          return;
+        }
+
+        const total = primaryItems.reduce((a, b) => a + b.valueMwh, 0);
+        $("pieTotal").textContent = fmt(total, 1);
+        $("pieUnit").textContent = "MWh total";
+
+        let acc = 0;
+        const stops = primaryItems.map((p) => {
+          const start = acc;
+          acc += total > 0 ? (p.valueMwh / total) * 100 : 0;
+          return { p, start, end: acc };
+        });
+
+        const grad = stops
+          .map(
+            (s) =>
+              `var(${s.p.colorVar}) ${s.start.toFixed(2)}% ${s.end.toFixed(2)}%`
+          )
+          .join(", ");
+        pie.style.background = `conic-gradient(${grad})`;
+
+        pieLegend.innerHTML = stops
+          .map((s) => {
+            const pct = total > 0 ? (s.p.valueMwh / total) * 100 : 0;
+            return `
+              <div class="leg2">
+                <span style="display:flex;align-items:center;gap:8px;min-width:0">
+                  <span class="sw2 ${s.p.sw}"></span>
+                  <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${
+                    s.p.name
+                  }</span>
+                </span>
+                <span style="color:rgba(215,242,255,.92)">${fmt(
+                  s.p.valueMwh,
+                  1
+                )} MWh <span style="color:rgba(159,182,199,.9)">(${pct.toFixed(
+              0
+            )}%)</span></span>
+              </div>
+            `;
+          })
+          .join("");
+
+        const top = primaryItems
+          .slice()
+          .sort((a, b) => b.valueMwh - a.valueMwh)[0];
+        $("topEnergy").textContent = top ? top.name : "—";
+      }
+
+      function renderDPE(identity) {
+        const dpeEnergyBadge = $("dpeEnergyBadge");
+        const dpeEnergyVal = $("dpeEnergyVal");
+        const dpeGesBadge = $("dpeGesBadge");
+        const dpeGesVal = $("dpeGesVal");
+
+        function colorForLetter(letter) {
+          const map = {
+            A: "#0fbf71",
+            B: "#44d27a",
+            C: "#cfe84e",
+            D: "#ffd24a",
+            E: "#ff9a40",
+            F: "#ff6a4b",
+            G: "#ff3d6e",
+          };
+          return map[letter] || "#cfe84e";
+        }
+
+        function setPointer(pointerId, letter, widths) {
+          const pointer = document.getElementById(pointerId);
+          if (!pointer) return;
+          const yMap = { A: 0, B: 26, C: 52, D: 78, E: 104, F: 130, G: 156 };
+          const y = yMap[letter] ?? 52;
+          pointer.setAttribute("transform", `translate(0,${y})`);
+          const rect = pointer.querySelector("rect");
+          if (rect) rect.setAttribute("width", String(widths[letter] ?? 250));
+        }
+
+        const widths = {
+          A: 210,
+          B: 230,
+          C: 250,
+          D: 270,
+          E: 290,
+          F: 305,
+          G: 320,
+        };
+
+        const hasManualDPE = !!(
+          identity?.dpe_energy_letter ||
+          identity?.dpe_ges_letter ||
+          identity?.dpe_energy_kwh_m2_an ||
+          identity?.dpe_ges_kgco2_m2_an
+        );
+        const dpe = hasManualDPE
+          ? {
+              dpe_energy_letter: String(
+                identity?.dpe_energy_letter || "B"
+              ).toUpperCase(),
+              dpe_ges_letter: String(
+                identity?.dpe_ges_letter || "C"
+              ).toUpperCase(),
+              dpe_energy_kwh_m2_an:
+                safeNum(identity?.dpe_energy_kwh_m2_an) ?? 112,
+              dpe_ges_kgco2_m2_an: safeNum(identity?.dpe_ges_kgco2_m2_an) ?? 18,
+            }
+          : computeAutoDPE(identity, computed.totalsByTypeKwh);
+
+        const eL = String(dpe.dpe_energy_letter || "B").toUpperCase();
+        const gL = String(dpe.dpe_ges_letter || "C").toUpperCase();
+        const eV = safeNum(dpe.dpe_energy_kwh_m2_an) ?? 112;
+        const gV = safeNum(dpe.dpe_ges_kgco2_m2_an) ?? 18;
+
+        dpeEnergyBadge.textContent = eL;
+        dpeEnergyBadge.style.background = colorForLetter(eL);
+        dpeEnergyVal.textContent = fmt(eV, 0);
+
+        dpeGesBadge.textContent = gL;
+        dpeGesBadge.style.background = colorForLetter(gL);
+        dpeGesVal.textContent = fmt(gV, 0);
+
+        setPointer("dpeE_pointer", eL, widths);
+        setPointer("dpeG_pointer", gL, widths);
+        fmt(gV, 0);
+
+        setPointer("dpeE_pointer", eL, widths);
+        setPointer("dpeG_pointer", gL, widths);
+
+        // classe carte
+        $("classTxt").textContent = identity?.classLetter || eL;
+      }
+
+      function renderClimateTable() {
+        const climate = [
+          { m: "Jan", dju: 380, djf: 12 },
+          { m: "Fév", dju: 330, djf: 10 },
+          { m: "Mar", dju: 260, djf: 8 },
+          { m: "Avr", dju: 160, djf: 3 },
+          { m: "Mai", dju: 70, djf: 0 },
+          { m: "Juin", dju: 15, djf: 2 },
+          { m: "Juil", dju: 5, djf: 18 },
+          { m: "Aoû", dju: 8, djf: 22 },
+          { m: "Sep", dju: 45, djf: 8 },
+          { m: "Oct", dju: 140, djf: 1 },
+          { m: "Nov", dju: 240, djf: 0 },
+          { m: "Déc", dju: 360, djf: 6 },
+        ];
+        const climBody = $("climBody");
+        const totalDJU = climate.reduce((a, x) => a + x.dju, 0);
+        const totalDJF = climate.reduce((a, x) => a + x.djf, 0);
+        climBody.innerHTML =
+          climate
+            .map(
+              (x) => `
+                <tr>
+                  <td>${x.m}</td>
+                  <td class="num">${x.dju.toLocaleString("fr-FR")}</td>
+                  <td class="num">${x.djf.toLocaleString("fr-FR")}</td>
+                </tr>
+              `
+            )
+            .join("") +
+          `
+            <tr class="totRow">
+              <td><b>Total</b></td>
+              <td class="num"><b>${totalDJU.toLocaleString("fr-FR")}</b></td>
+              <td class="num"><b>${totalDJF.toLocaleString("fr-FR")}</b></td>
+            </tr>
+          `;
+      }
+
+      function renderHistPlaceholder() {
+        // Placeholder comme sur la maquette (à remplacer par une vraie ventilation par lot quand tu voudras).
+        const lots = [
+          { name: "CVC", val: 110 },
+          { name: "Éclairage", val: 62 },
+          { name: "IT / Data", val: 48 },
+          { name: "ECS", val: 28 },
+          { name: "Ventilation", val: 24 },
+          { name: "Pompages", val: 18 },
+          { name: "Ascenseurs", val: 12 },
+          { name: "Autres", val: 18 },
+        ];
+        const hist = $("hist");
+        const maxLot = Math.max(...lots.map((l) => l.val));
+        const lotMax = lots.find((l) => l.val === maxLot);
+        $("lotMaxTxt").textContent = lotMax ? lotMax.name : "—";
+        $("topLots").textContent = lots
+          .slice()
+          .sort((a, b) => b.val - a.val)
+          .slice(0, 2)
+          .map((x) => x.name)
+          .join(", ");
+
+        hist.innerHTML = lots
+          .map((l) => {
+            const h = Math.max(6, Math.round((l.val / maxLot) * 100));
+            return `
+              <div class="barCol" title="${l.name} — ${l.val} MWh">
+                <div class="barV" style="height:${h}%"></div>
+                <div class="barLbl">${l.name}</div>
+              </div>
+            `;
+          })
+          .join("");
+
+        $("lotsTxt").textContent = String(lots.length);
+      }
+
+      // -----------------------------
+      // Left OK badges
+      // -----------------------------
+      function setBadge(id, ok) {
+        const el = $(id);
+        if (!el) return;
+        el.className = ok ? "ok" : "bad";
+        el.textContent = ok ? "OK" : "—";
+      }
+
+      function refreshLeftBadges() {
+        const hasIdentity =
+          !!localStorage.getItem(KEY_IDENTITY_V1) ||
+          !!localStorage.getItem(KEY_IDENTITY_COMPAT);
+        const hasPlan = !!localStorage.getItem(KEY_PLAN);
+        const hasReleves = !!localStorage.getItem(KEY_RELEVES);
+        // Analyse/Carbone: on considère OK si les pages ont été utilisées (clé compat identity ou facteurs)
+        const hasCarbon =
+          !!localStorage.getItem(KEY_IDENTITY_COMPAT) || hasIdentity;
+
+        setBadge("okIdentity", hasIdentity);
+        setBadge("okPlan", hasPlan);
+        setBadge("okReleves", hasReleves);
+        setBadge("okAnalyse", hasPlan && hasReleves);
+        setBadge("okCarbon", hasCarbon);
+      }
+
+      // -----------------------------
+      // Main render
+      // -----------------------------
+      function renderAll() {
+        refreshLeftBadges();
+
+        const identity = normalizeIdentity();
+        const hasIdentity = identity && identity.name !== "—";
+        setIdentityStatus(
+          hasIdentity,
+          hasIdentity ? "✅ Identité appliquée" : "⚠️ Identité non chargée"
+        );
+
+        // Top bar
+        $("siteName").textContent = identity.name || "—";
+        $("siteCity").textContent = identity.city || "—";
+        $("chipCity").textContent = identity.city || "—";
+        $("siteSurface").textContent = identity.surface_m2
+          ? `${Number(identity.surface_m2).toLocaleString("fr-FR")} m²`
+          : "—";
+        $("siteEnergies").textContent =
+          identity.energies && identity.energies.length
+            ? identity.energies.join(" · ")
+            : "—";
+
+        // Map meta
+        $("addrTxt").textContent = `Adresse: ${identity.address || "—"}`;
+        $("latlonTxt").textContent = `${identity.lat.toFixed(
+          4
+        )}, ${identity.lon.toFixed(4)}`;
+        $("chipLat").textContent = `${identity.lat.toFixed(4)}° N`;
+        $("chipLon").textContent = `${identity.lon.toFixed(4)}° E`;
+        $("surfTxt").textContent = identity.surface_m2
+          ? `${Number(identity.surface_m2).toLocaleString("fr-FR")} m²`
+          : "—";
+
+        // place pin (simple mapping)
+        const pin = $("pin");
+        pin.style.left = "49%";
+        pin.style.top = "44%";
+
+        renderDPE(identity);
+        renderClimateTable();
+        renderHistPlaceholder();
+
+        // --- KPIs from data ---
+        const plan = loadPlan();
+        const releves = loadReleves();
+        const computed = computeEnergyTotals(plan, releves);
+
+        if (!computed || !plan || !releves) {
+          // No data -> placeholders
+          renderPie([]);
+          $("vConso").textContent = "—";
+          $("vCarbon").textContent = "—";
+          $("vEco").textContent = "—";
+          $("ecoTxt").textContent = "—";
+          setRing($("ringCarbon"), 0, "--green");
+          setRing($("ringConso"), 0, "--cyan");
+          setRing($("ringEco"), 0, "--green");
+          $("kpiBuildings").textContent = plan?.nodes?.length
+            ? String(plan.nodes.length)
+            : "—";
+          $("kpiBuildingsDelta").textContent = plan?.nodes?.length
+            ? "(plan chargé)"
+            : "—";
+          $("kpiEnergy").textContent = "—";
+          $("kpiEnergyDelta").textContent = "—";
+          return;
+        }
+
+        // Build pie items
+        const order = [
+          "elec",
+          "gas",
+          "heat_livr",
+          "heat_prod",
+          "heat",
+          "cold_livr",
+          "cold_prod",
+          "cold",
+          "fuel",
+          "solar",
+          "ecs",
+          "air",
+          "gen",
+          "other",
+        ];
+        const items = [];
+        for (const t of order) {
+          const kwh = computed.totalsByTypeKwh[t];
+          if (!Number.isFinite(kwh) || kwh <= 0) continue;
+          items.push({
+            key: t,
+            name: typeLabel(t),
+            valueMwh: kwh / 1000,
+            colorVar: typeColorVar(t),
+            sw: typeSw(t),
+          });
+        }
+        // si trop d'énergies : garder les 3 plus grosses pour la vue "comme la capture"
+        const itemsTop3 = items
+          .slice()
+          .sort((a, b) => b.valueMwh - a.valueMwh)
+          .slice(0, 3)
+          .sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
+
+        renderPie(itemsTop3);
+
+        const totalMwh12 = computed.totalKwh12 / 1000;
+        $("vConso").textContent = fmt(totalMwh12, 1);
+
+        // ring conso: scale 0..600 MWh (comme maquette)
+        const consoPct = Math.max(0, Math.min(100, (totalMwh12 / 600) * 100));
+        setRing($("ringConso"), consoPct, "--cyan");
+
+        // CO2
+        const surface = safeNum(identity.surface_m2);
+        let emissionsKg = 0;
+        for (const [t, kwh] of Object.entries(computed.totalsByTypeKwh || {})) {
+          const f = safeNum(identity.co2_factors_kwh?.[t]);
+          if (Number.isFinite(kwh) && Number.isFinite(f))
+            emissionsKg += kwh * f;
+        }
+        const carbonKgPerM2 =
+          surface && surface > 0 ? emissionsKg / surface : null;
+        $("vCarbon").textContent =
+          carbonKgPerM2 == null ? "—" : fmt(carbonKgPerM2, 1);
+
+        // ring carbon: 0 (bon) -> 40 (mauvais)
+        const carbonPct =
+          carbonKgPerM2 == null
+            ? 0
+            : Math.max(0, Math.min(100, 100 - (carbonKgPerM2 / 40) * 100));
+        setRing($("ringCarbon"), carbonPct, "--green");
+
+        // Eco vs N-1 (12 mois vs 12 mois précédents)
+        const prev = computed.totalKwhPrev12;
+        const ecoPct =
+          prev > 0 ? ((computed.totalKwh12 - prev) / prev) * 100 : null;
+        const ecoText =
+          ecoPct == null ? "—" : `${ecoPct > 0 ? "+" : ""}${fmt(ecoPct, 1)}%`;
+        $("vEco").textContent = ecoText;
+        $("ecoTxt").textContent = ecoText;
+        $("ecoTxt").style.color =
+          ecoPct != null && ecoPct <= 0 ? "var(--green)" : "var(--red)";
+
+        const ecoRingPct =
+          ecoPct == null ? 0 : Math.max(0, Math.min(100, (-ecoPct / 50) * 100));
+        const ecoColor = ecoPct != null && ecoPct <= 0 ? "--green" : "--red";
+        setRing($("ringEco"), ecoRingPct, ecoColor);
+
+        // KPI right
+        $("kpiBuildings").textContent = String(computed.meterCount || 0);
+        $("kpiBuildingsDelta").textContent = computed.meterCount
+          ? "(plan chargé)"
+          : "—";
+        $("kpiEnergy").textContent = fmt(computed.totalKwh12, 0);
+        $("kpiEnergyDelta").textContent =
+          ecoPct == null ? "—" : `${ecoPct <= 0 ? "↓" : "↑"} ${ecoText} vs N-1`;
+
+        // Update synth top energy
+        if (itemsTop3.length) {
+          const top = itemsTop3
+            .slice()
+            .sort((a, b) => b.valueMwh - a.valueMwh)[0];
+          $("topEnergy").textContent = top ? top.name : "—";
+        }
+      }
+
+      // -----------------------------
+      // Tabs + Search
+      // -----------------------------
+      const tabs = document.querySelectorAll(".tab");
+      tabs.forEach((t) =>
+        t.addEventListener("click", () => {
+          tabs.forEach((x) => x.classList.remove("active"));
+          t.classList.add("active");
+        })
+      );
+
+      const searchLeft = $("searchLeft");
+      const leftMenu = $("leftMenu");
+      searchLeft.addEventListener("input", () => {
+        const q = searchLeft.value.toLowerCase().trim();
+        leftMenu.querySelectorAll(".item").forEach((it) => {
+          const txt = it.innerText.toLowerCase();
+          it.style.display = txt.includes(q) ? "" : "none";
+        });
+        leftMenu.querySelectorAll("h4").forEach((h) => (h.style.display = ""));
+      });
+
+      // -----------------------------
+      // Chat (UI)
+      // -----------------------------
+      const chatBox = $("chatBox");
+      const chatInput = $("chatInput");
+      const sendBtn = $("sendBtn");
+
+      function addMsg(text, who) {
+        const div = document.createElement("div");
+        div.className = "msg " + who;
+        div.textContent = text;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      function fakeAIAnswer(q) {
+        const ql = q.toLowerCase();
+        if (ql.includes("cvc") || ql.includes("ventilation")) {
+          return "Piste rapide : vérifie la consigne gaine, horaires, sur-ventilation, filtres encrassés et régulation CTA. Je peux proposer un plan d’action si tu me donnes la conso CVC par mois.";
+        }
+        if (ql.includes("10%") || ql.includes("baisser")) {
+          return "3 actions : 1) optimiser horaires CVC/éclairage, 2) réduire consignes (±1°C) + relance progressive, 3) cibler les lots les + consommateurs (CVC/éclairage) avec détection dérive nuit/week-end.";
+        }
+        if (ql.includes("carbone") || ql.includes("co2")) {
+          return "Pour réduire l’empreinte carbone : prioriser économies élec + optimiser CVC (rendements, free-cooling) + suivre facteur CO₂ par énergie. Donne-moi tes facteurs CO₂ et je calcule l’impact.";
+        }
+        return "OK. Donne-moi : énergie (élec/eau/gaz), période (mois), et le lot concerné. Je te fais une analyse + préconisations ciblées.";
+      }
+
+      function send() {
+        const q = chatInput.value.trim();
+        if (!q) return;
+        addMsg(q, "user");
+        chatInput.value = "";
+        setTimeout(() => addMsg(fakeAIAnswer(q), "ai"), 450);
+      }
+
+      sendBtn.addEventListener("click", send);
+      chatInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") send();
+      });
+
+      // -----------------------------
+      // Nav
+      // -----------------------------
+      function goAnalyseEnergie() {
+        window.location.href = "dashboard_conso_auto.html";
+      }
+      function goPlanComptage() {
+        window.location.href = "plan_comptage.html";
+      }
+      function goTempsReel() {
+        window.location.href = "compteur_energie_temps_reel.html";
+      }
+      function goCompteurs() {
+        window.location.href = "compteurs_admin.html";
+      }
+      function goInfosBatiment() {
+        window.location.href = "ENERGISME_identite_batiment_v1.html";
+      }
+      function goEmpreinteCarbone() {
+        window.location.href = "empreinte_carbone.html";
+      }
+
+      // -----------------------------
+      // Init
+      // -----------------------------
+      renderAll();
+
+      // Auto refresh if localStorage changes (other tabs)
+      window.addEventListener("storage", () => {
+        consoMemo.clear();
+        renderAll();
+      });
+    </script>
+  </body>
+</html>
